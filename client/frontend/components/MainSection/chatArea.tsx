@@ -1,41 +1,81 @@
-import { useState } from "react";
-import React from "react";
+import React, { useState } from "react";
+import { Button, TextField, Typography, Box } from "@mui/material";
+import { BsForward } from "react-icons/bs";
+import { FaStepForward } from "react-icons/fa";
+import { IoMdArrowForward } from "react-icons/io";
 
+function ChatArea() {
+  const [chat, setChat] = useState("");
 
-function ChatArea(){
-    const [chat, setChat] = useState('');
-    // chat [sendChat,setSendChat] = useState(0);
-    return(
-        <div className='flex-1 flex flex-col text-center px-4'>
-      <h1 className=' text-4xl text-white'>What should we build today?</h1>
-        <p className='text-white text-sm mt-2'>Create stunning apps & websites by chatting with AI.</p>
-        <div className=' w-full flex justify-center  mt-4'>
-        <form
-  onSubmit={(e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    // Trigger build logic here
-  }}
-  className="text-center flex justify-center relative w-96"
->
-  <textarea
-    className="w-full p-4 h-30 text-white focus:outline-none resize-none text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary bg-transparent text-sm border-2 rounded-2xl"
-    placeholder="Type your idea and we'll build it together."
-    value={chat}
-    onChange={(e) => setChat(e.target.value)}
-  />
-  {chat && (
-    <button
-      type="submit"
-      className="absolute top-2 right-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm rounded-xl"
-    >
-      Build
-    </button>
-  )}
-</form>
-</div>
+    console.log("Sending:", chat);
+    setChat("");
+  };
 
-      </div>
-    );
+  return (
+    <Box
+      // className=" flex flex-col text-center px-4"
+      sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+    >
+      <Typography variant="h3" sx={{ color: "whitesmoke" }}>
+        What should we build today?
+      </Typography>
+      <Typography variant="subtitle1" sx={{ color: "gray", mt: 1 }}>
+        Create stunning apps & websites by chatting with AI.
+      </Typography>
+
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          mt: 4,
+          width: "100%",
+          maxWidth: 400,
+          position: "relative",
+        }}
+      >
+        <TextField
+          label="Type your text..."
+          multiline
+          minRows={4}
+          maxRows={12}
+          fullWidth
+          value={chat}
+          onChange={(e) => setChat(e.target.value)}
+          variant="outlined"
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 2,
+              backgroundColor: "rgb(38, 38, 38)",
+              color: "white",
+            },
+            "& .MuiInputLabel-root": { color: "grey" },
+          }}
+        />
+
+        {chat && (
+          <Button
+            type="submit"
+            variant="contained"
+            size="small"
+            sx={{
+              position: "absolute",
+              top:10,
+              right: 12,
+              borderRadius: 1,
+              px: 2,
+              width:10,
+              height:30
+             
+            }}
+          >
+            <IoMdArrowForward/>
+          </Button>
+        )}
+      </Box>
+    </Box>
+  );
 }
 
 export default ChatArea;

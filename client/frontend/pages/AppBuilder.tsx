@@ -5,7 +5,8 @@ import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import { Alert, AlertTitle, Box, Grid, TextareaAutosize } from "@mui/material";
+import { Alert, AlertTitle, Box, ButtonGroup, Grid, TextareaAutosize } from "@mui/material";
+import { IoMdArrowForward } from "react-icons/io";
 
 
 const card = (
@@ -41,7 +42,7 @@ function AppBuilder({ height = "100vh" }) {
       <Navbar />
 
       {/* Main section */}
-      <Box display="flex" height={height}  gap={2} mt={2}>
+      <Box display="flex" height={height}  gap={4} mt={2}>
         {/* Left section */}
         <Box  display="flex"  flexDirection='column'  sx={{width:'40%'}}>
             <Box display="flex" justifyContent='end'>
@@ -55,7 +56,8 @@ function AppBuilder({ height = "100vh" }) {
           
           </OutlinedCard>
           </Box>
-            <Box display="flex" sx={{height:'100%',width:'100%',margin:"12px",position:"relative"}} alignItems="end" >
+            <Box display="flex" sx={{height:'100%',width:'100%',margin:"12px"}} alignItems="end" >
+      <Box sx={{position:"relative",width:"100%"}}>
      <TextareaAutosize
     minRows={4}
     maxRows={12}
@@ -73,17 +75,26 @@ function AppBuilder({ height = "100vh" }) {
     }}
   />
 
-  <Button sx={{position:'absolute', right:0}}>scn</Button>
+  <Button  variant="contained" sx={{position:'absolute', right:4, top:4}}><IoMdArrowForward/>
+  </Button>
+  </Box>
         </Box>
 
         </Box>
-
       
         {/* Middle section */}
-        <Box  display="flex" alignItems="center" justifyContent="center">
-          <Typography variant="body1" color="white">
-            slkdn
-          </Typography>
+        <Box  display="flex"  flexDirection="column"   bgcolor="rgb(23, 23, 23)" width="100%" borderRadius="10px">
+          <Box display="flex" justifyContent="flex-start" padding={2}>
+            <ButtonGroup>
+              <Button >Code</Button>
+              <Button>Preview</Button>
+            </ButtonGroup>
+          </Box>
+          <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+  <Typography variant="body1" sx={{ color: "gray" }}>
+    Your preview appears here
+  </Typography>
+</Box>
         </Box>
       </Box>
     </Box>
