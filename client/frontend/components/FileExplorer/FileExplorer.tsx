@@ -15,10 +15,10 @@ const List = ({ list }:ListType) => {
         }))
     }
   return (
-    <Box>
+    <Box >
       {list.map((node, index) => (
         <Box key={index} sx={{ marginLeft: node.children ? 2 : 0 }}>
-          <Box>{(node.isFolder && <span onClick={()=>handleToggle(index)}>{expand[index]?<FaAngleDown/>:<FaAngleRight/>}</span>)} 
+          <Box display={"flex"} justifyItems={"center"} alignItems={"center"}>{(node.isFolder && <span onClick={()=>handleToggle(index)}>{expand[index]?<FaAngleDown/>:<FaAngleRight/>}</span>)} 
 {node.name} </Box>
           {expand[index] && node.children && (
             <Box sx={{ marginLeft: 2 }}>
@@ -35,11 +35,10 @@ const List = ({ list }:ListType) => {
 function FileExplorer(){
     const [data] = useState(json);
     return(
-    <Box padding={4}>
-       <Box  color="white">
+    <Box padding={4} marginRight={2} border={'1px solid grey'} paddingRight={2} color={"GrayText"} fontWeight={"bold"} boxSizing={"border-box"} borderRadius={1} height={"100%"} width={"300px"} sx={{backgroundColor:"rgb(23, 23, 23)"}}>
         <List list={data}/>
        </Box>
-    </Box>
+
 
     );
 }

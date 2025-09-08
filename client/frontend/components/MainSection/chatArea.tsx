@@ -1,15 +1,20 @@
 import React, { useState } from "react";
 import { Button, TextField, Typography, Box } from "@mui/material";
-import { BsForward } from "react-icons/bs";
-import { FaStepForward } from "react-icons/fa";
 import { IoMdArrowForward } from "react-icons/io";
+import { useNavigate } from "react-router-dom";
+// import axios from "axios";
 
 function ChatArea() {
   const [chat, setChat] = useState("");
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Sending:", chat);
+    if(chat.trim()){
+      navigate('/builder',{state:{chat}});
+
+    }
     setChat("");
   };
 
@@ -69,6 +74,7 @@ function ChatArea() {
               height:30
              
             }}
+            onClick={handleSubmit}
           >
             <IoMdArrowForward/>
           </Button>

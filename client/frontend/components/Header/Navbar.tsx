@@ -1,6 +1,5 @@
 import { FaDiscord, FaLinkedin } from "react-icons/fa";
 import { FaSquareXTwitter } from "react-icons/fa6";
-import React, { type FC } from "react";
 import { Box, Typography } from "@mui/material";
 
 function Navbar({height=''}){

@@ -1,14 +1,28 @@
 import Navbar from "../components/Header/Navbar";
 import OutlinedCard from "../components/Card/card"
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { Alert, AlertTitle, Box, ButtonGroup, Grid, TextareaAutosize } from "@mui/material";
 import { IoMdArrowForward } from "react-icons/io";
 import FileExplorer from "../components/FileExplorer/FileExplorer";
+import { Editor } from "@monaco-editor/react";
 
 
+
+
+
+function AppBuilder({ height = "100vh" }) {
+  const [chatSubmitted, setChatSubmitted] = useState(false);
+
+  // async function init() {
+  //   const 
+  // }
+
+  // useEffect(() => {
+  //   init();
+  // }, []);
 
 const card = (
   <React.Fragment>
@@ -23,8 +37,6 @@ const card = (
          
           <AlertTitle sx={{color:'warning.main', fontWeight:'bold'}}>Error</AlertTitle>
           <Typography  color="grey" variant="subtitle2">You cancelled this message</Typography>
-       
-         
         </Grid>
          <Grid size={4}>
             <Button  variant="contained" color="warning" size="small">Retry</Button>
@@ -35,10 +47,6 @@ const card = (
   </CardContent>
   </React.Fragment>
 );
-
-
-function AppBuilder({ height = "100vh" }) {
-  const [chatSubmitted, setChatSubmitted] = useState(false);
   function handleChatSubmit() {
     setChatSubmitted(true);
   }
@@ -98,11 +106,16 @@ function AppBuilder({ height = "100vh" }) {
           {chatSubmitted ?   <Box display={"flex"} height="100%" >
          <FileExplorer/>
 
-          <Box display="flex" justifyContent="center" alignItems="center" height="100%" width={"100%" } >
-  <Typography variant="body1" sx={{ color: "gray" }}>
-    Your preview appears here
-  </Typography>
-        </Box>
+        <Box sx={{ flex: 1, overflow: "hidden" }}>
+  <Editor
+
+    defaultLanguage="javascript"
+    defaultValue="// some comment"
+    theme="vs-dark"
+    options={{ minimap: { enabled: false }, wordWrap: "on" }}
+  />
+</Box>
+
           </Box>
           : <Box display="flex" justifyContent="center" alignItems="center" height="100%" >
   <Typography variant="body1" sx={{ color: "gray" }}>

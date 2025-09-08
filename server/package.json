@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "tsc -b tsconfig.build.json && node dist/src/index.js"
+    "dev": "tsc -b tsconfig.build.json && nodemon dist/src/index.js"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +21,7 @@
     "typescript": "^5.9.2"
   },
   "devDependencies": {
-    "@types/node": "^24.3.0"
+    "@types/node": "^24.3.0",
+    "nodemon": "^3.1.10"
   }
 }
