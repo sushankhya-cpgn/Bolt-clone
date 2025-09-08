@@ -1,12 +1,13 @@
 import Navbar from "../components/Header/Navbar";
 import OutlinedCard from "../components/Card/card"
-import React from 'react';
-import CardActions from '@mui/material/CardActions';
+import React, { useState } from 'react';
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { Alert, AlertTitle, Box, ButtonGroup, Grid, TextareaAutosize } from "@mui/material";
 import { IoMdArrowForward } from "react-icons/io";
+import FileExplorer from "../components/FileExplorer/FileExplorer";
+
 
 
 const card = (
@@ -37,6 +38,10 @@ const card = (
 
 
 function AppBuilder({ height = "100vh" }) {
+  const [chatSubmitted, setChatSubmitted] = useState(false);
+  function handleChatSubmit() {
+    setChatSubmitted(true);
+  }
   return (
     <Box display="flex" flexDirection="column" height={height} bgcolor='black'>
       <Navbar />
@@ -75,7 +80,7 @@ function AppBuilder({ height = "100vh" }) {
     }}
   />
 
-  <Button  variant="contained" sx={{position:'absolute', right:4, top:4}}><IoMdArrowForward/>
+  <Button  variant="contained" sx={{position:'absolute', right:4, top:4}} onClick={handleChatSubmit}><IoMdArrowForward/>
   </Button>
   </Box>
         </Box>
@@ -90,11 +95,21 @@ function AppBuilder({ height = "100vh" }) {
               <Button>Preview</Button>
             </ButtonGroup>
           </Box>
-          <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+          {chatSubmitted ?   <Box display={"flex"} height="100%" >
+         <FileExplorer/>
+
+          <Box display="flex" justifyContent="center" alignItems="center" height="100%" width={"100%" } >
   <Typography variant="body1" sx={{ color: "gray" }}>
     Your preview appears here
   </Typography>
-</Box>
+        </Box>
+          </Box>
+          : <Box display="flex" justifyContent="center" alignItems="center" height="100%" >
+  <Typography variant="body1" sx={{ color: "gray" }}>
+    Your code will appear here
+  </Typography>
+        
+        </Box>}
         </Box>
       </Box>
     </Box>

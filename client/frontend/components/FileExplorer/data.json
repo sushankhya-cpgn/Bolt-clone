@@ -1,0 +1,55 @@
+[{
+    "name":"public",
+    "isFolder": true,
+    "children": [
+        { 
+            "name":"index.html",
+            "isFolder": false
+        },
+        {
+            "name":"favicon.ico",
+            "isFolder": false
+        }
+    ]
+},
+{
+    "name":"src",
+    "isFolder": true,
+    "children":[
+        {
+            "name":"components",
+            "isFolder": true,
+            "children": [
+                {
+                    "name":"components",
+                    "isFolder": true,
+                    "children": [
+                        {
+                            "name":"test",
+                            "isFolder": true,
+                            "children": [{
+                                "name":"file.js",
+                                "isFolder": false
+                            }]
+                        }
+                    ]
+                }
+            ]
+        }
+        ,
+        {
+            "name":"App.js",
+            "isFolder": false
+        },
+        {
+            "name":"index.js",
+            "isFolder": false
+        }
+       
+    ]
+},
+{
+    "name":"package.json",
+    "isFolder": false
+}
+]
