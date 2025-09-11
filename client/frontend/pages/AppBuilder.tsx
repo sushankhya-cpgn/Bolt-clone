@@ -160,7 +160,7 @@ const card = (
     defaultValue="// some comment"
     value={selectedFile?.content || ""}
     theme="vs-dark"
-    options={{ minimap: { enabled: false }, wordWrap: "on" }}
+    options={{ minimap: { enabled: false }, wordWrap: "on" }}//s
 
   />
 </Box>
