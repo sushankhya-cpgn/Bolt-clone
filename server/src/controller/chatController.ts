@@ -10,6 +10,7 @@ dotenv.config();
 
 export const chatController = async(req:Request,res:Response,next:NextFunction)=>{
     try{
+        console.log("Incoming body:", req.body);
         const prompts = req.body.prompts.join(',') || "";
         const response = await groq.chat.completions.create({
             messages:[
@@ -22,14 +23,15 @@ export const chatController = async(req:Request,res:Response,next:NextFunction)=
                     content: prompts
                 }
             ],
-            model:"llama-3.3-70b-versatile",
+            // model:"llama-3.3-70b-versatile",
+            model:"llama-3.1-8b-instant",
             temperature: 0.5,
             max_completion_tokens:8000,
             top_p:1,
-            stream: true,
+            stream: false,
         })
 
-        res.status(200).json({message:response});
+        res.status(200).json({message:response?.choices[0]?.message?.content ||""});
     }
     catch(error){
         console.log(error)

@@ -1,21 +1,27 @@
-import React, { useState } from "react";
+import React from "react";
 import { Button, TextField, Typography, Box } from "@mui/material";
 import { IoMdArrowForward } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../src/app/store";
+import { clearText, setText } from "../../src/features/chat/chatSlice";
 // import axios from "axios";
 
 function ChatArea() {
-  const [chat, setChat] = useState("");
+  const chat = useSelector((state: RootState) => state.chat.text); // get from redux
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Sending:", chat);
     if(chat.trim()){
-      navigate('/builder',{state:{chat}});
+      navigate('/builder',{state:{prompt:chat}});
 
     }
-    setChat("");
+      dispatch(clearText());
   };
 
   return (
@@ -47,7 +53,7 @@ function ChatArea() {
           maxRows={12}
           fullWidth
           value={chat}
-          onChange={(e) => setChat(e.target.value)}
+          onChange={(e) => dispatch(setText(e.target.value))}
           variant="outlined"
           sx={{
             "& .MuiOutlinedInput-root": {

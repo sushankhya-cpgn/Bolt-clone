@@ -1,55 +1,18 @@
-[{
-    "name":"public",
+[
+  {
+    "name": "src",
     "isFolder": true,
     "children": [
-        { 
-            "name":"index.html",
-            "isFolder": false
-        },
-        {
-            "name":"favicon.ico",
-            "isFolder": false
-        }
+      {
+        "name": "index.js",
+        "isFolder": false,
+        "content": "console.log('Hello from index.js');"
+      },
+      {
+        "name": "App.js",
+        "isFolder": false,
+        "content": "export default function App() { return <h1>Hello</h1>; }"
+      }
     ]
-},
-{
-    "name":"src",
-    "isFolder": true,
-    "children":[
-        {
-            "name":"components",
-            "isFolder": true,
-            "children": [
-                {
-                    "name":"components",
-                    "isFolder": true,
-                    "children": [
-                        {
-                            "name":"test",
-                            "isFolder": true,
-                            "children": [{
-                                "name":"file.js",
-                                "isFolder": false
-                            }]
-                        }
-                    ]
-                }
-            ]
-        }
-        ,
-        {
-            "name":"App.js",
-            "isFolder": false
-        },
-        {
-            "name":"index.js",
-            "isFolder": false
-        }
-       
-    ]
-},
-{
-    "name":"package.json",
-    "isFolder": false
-}
+  }
 ]

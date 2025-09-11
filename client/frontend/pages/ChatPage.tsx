@@ -9,6 +9,6 @@ function ChatPage(){
           <ChatArea/>
         </>
       )
-}
+} 
 
 export default ChatPage;

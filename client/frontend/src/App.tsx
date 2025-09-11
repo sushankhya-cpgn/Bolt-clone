@@ -5,8 +5,8 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { Box } from '@mui/material'
 
 
+
 function App() {
- 
   return (
   <Box color='black' sx={{backgroundColor:"black", height:"100vh",boxSizing:"border-box"}}>
   <BrowserRouter>

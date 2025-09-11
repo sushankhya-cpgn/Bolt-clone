@@ -8,30 +8,77 @@ import { Alert, AlertTitle, Box, ButtonGroup, Grid, TextareaAutosize } from "@mu
 import { IoMdArrowForward } from "react-icons/io";
 import FileExplorer from "../components/FileExplorer/FileExplorer";
 import { Editor } from "@monaco-editor/react";
+import json from "../components/FileExplorer/data.json";
+import axios from "axios";
+import { useLocation } from "react-router-dom";
+import type { List, Node } from "../type/ListType";
 
 
-
+const API_URL = 'http://localhost:8000';
 
 
 function AppBuilder({ height = "100vh" }) {
+  const location = useLocation();
   const [chatSubmitted, setChatSubmitted] = useState(false);
+  const {prompt} = location.state || {};
+  const [template, setTemplate] = useState([]);
+  const [selectedFile, setSelectedFile] = useState<Node|null>(null);
+  const[data] = useState(json);
+  console.log("Prompt:", prompt);
+  // Step 1: Send the prompt to the backend and get the template
+ async function init() {
+  try {
+    // 1. First request → /template
+    const response = await axios.post(`${API_URL}/template`, {
+      prompt
+    });
 
-  // async function init() {
-  //   const 
+    const newtemplate = response.data?.prompts || [];
+    setTemplate(newtemplate);
+    console.log("Template:", newtemplate);
+
+    // 2. Second request → /chat
+    const response2 = await axios.post(`${API_URL}/chat`, {
+      prompts: [...newtemplate, prompt]
+    });
+
+    console.log("Response of code:", response2.data);
+
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error("Axios error:", error.response?.data || error.message);
+    } else {
+      console.error("Unexpected error:", error);
+    }
+  }
+  finally{
+    setChatSubmitted(true);
+  }
+}
+
+
+  // async function getCode(){
+  //   const response = await axios.post(`${API_URL}/chat`,{
+  //     prompt: template
+  //   })
+  //   console.log('Response of code',response);
   // }
 
-  // useEffect(() => {
-  //   init();
-  // }, []);
+  useEffect(() => {
+    init();
+    // getCode();
+
+  }, []);
 
 const card = (
   <React.Fragment>
-    <CardContent >
+    <CardContent>
     
+        
         <Typography gutterBottom color="white" variant="body1">
-            Build a todoApp
+            {prompt}
         </Typography>
-          <Alert variant="filled" severity="warning"  sx={{color:'warning.main',borderRadius:'10px', bgcolor:'rgb(59, 49, 35)'}}>
+          {/* <Alert variant="filled" severity="warning"  sx={{color:'warning.main',borderRadius:'10px', bgcolor:'rgb(59, 49, 35)'}}>
           <Grid container spacing={2}>
             <Grid size={8}>
          
@@ -42,7 +89,7 @@ const card = (
             <Button  variant="contained" color="warning" size="small">Retry</Button>
         </Grid>
         </Grid>
-        </Alert>
+        </Alert> */}
        
   </CardContent>
   </React.Fragment>
@@ -104,15 +151,17 @@ const card = (
             </ButtonGroup>
           </Box>
           {chatSubmitted ?   <Box display={"flex"} height="100%" >
-         <FileExplorer/>
+         <FileExplorer data={data} onFileSelect={setSelectedFile}/>
 
         <Box sx={{ flex: 1, overflow: "hidden" }}>
   <Editor
 
     defaultLanguage="javascript"
     defaultValue="// some comment"
+    value={selectedFile?.content || ""}
     theme="vs-dark"
     options={{ minimap: { enabled: false }, wordWrap: "on" }}
+
   />
 </Box>
 
