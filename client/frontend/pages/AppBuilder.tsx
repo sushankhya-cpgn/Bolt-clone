@@ -25,6 +25,14 @@ function AppBuilder({ height = "100vh" }) {
   const [selectedFile, setSelectedFile] = useState<Node|null>(null);
   const[data] = useState(json);
   console.log("Prompt:", prompt);
+
+  const [steps] = useState([
+    "Generating file structure",
+    "Creating components",
+    "Adding styles",
+    "Integrating functionality",
+    "Finalizing code"
+  ]);
   // Step 1: Send the prompt to the backend and get the template
  async function init() {
   try {
@@ -160,7 +168,7 @@ const card = (
     defaultValue="// some comment"
     value={selectedFile?.content || ""}
     theme="vs-dark"
-    options={{ minimap: { enabled: false }, wordWrap: "on" }}//s
+    options={{ minimap: { enabled: false }, wordWrap: "on" }}
 
   />
 </Box>
