@@ -22,7 +22,7 @@ Output:
 import {type Step,  StepType } from "../type/StepType";
 
 export default function parseStepXML(response: string):Step[]{
-
+    console.log("Parsing XML Response:", response);
     const xmlMatch = response.match((/<boltArtifact[^>]*>([\s\S]*?)<\/boltArtifact>/))
     if(!xmlMatch){
         return [];

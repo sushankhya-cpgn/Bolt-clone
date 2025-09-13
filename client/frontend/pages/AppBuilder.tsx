@@ -1,17 +1,21 @@
 import Navbar from "../components/Header/Navbar";
 import OutlinedCard from "../components/Card/card"
 import React, { useEffect, useState } from 'react';
+import parseStepFromXML from "../utils/parseStepFromXML"
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { Alert, AlertTitle, Box, ButtonGroup, Grid, TextareaAutosize } from "@mui/material";
 import { IoMdArrowForward } from "react-icons/io";
 import FileExplorer from "../components/FileExplorer/FileExplorer";
+import convertToTree from "../utils/fileTreeConverter";
 import { Editor } from "@monaco-editor/react";
 import json from "../components/FileExplorer/data.json";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
 import type { List, Node } from "../type/ListType";
+import {StepType, type Step } from "../type/StepType";
+
 
 
 const API_URL = 'http://localhost:8000';
@@ -23,16 +27,10 @@ function AppBuilder({ height = "100vh" }) {
   const {prompt} = location.state || {};
   const [template, setTemplate] = useState([]);
   const [selectedFile, setSelectedFile] = useState<Node|null>(null);
-  const[data] = useState(json);
+  const[data,setData] = useState([{}]);
   console.log("Prompt:", prompt);
 
-  const [steps] = useState([
-    "Generating file structure",
-    "Creating components",
-    "Adding styles",
-    "Integrating functionality",
-    "Finalizing code"
-  ]);
+  const [steps,setSteps] = useState([{}]);
   // Step 1: Send the prompt to the backend and get the template
  async function init() {
   try {
@@ -45,12 +43,22 @@ function AppBuilder({ height = "100vh" }) {
     setTemplate(newtemplate);
     console.log("Template:", newtemplate);
 
+    // const generated_steps = parseStepFromXML(newtemplate[1] || "");
+    // setSteps(generated_steps.map((step: Step) => ({ ...step, status: "completed" })));
+
     // 2. Second request → /chat
     const response2 = await axios.post(`${API_URL}/chat`, {
       prompts: [...newtemplate, prompt]
     });
 
-    console.log("Response of code:", response2.data);
+    console.log("Response from /chat:", response2.data);
+    const generated_steps = parseStepFromXML(response2.data.message || "");
+    setSteps(generated_steps.map((step: Step) => ({ ...step, status: "completed" })));
+
+    const editor_data = convertToTree(generated_steps || []);
+    setData(editor_data);
+    
+    console.log("Editor Data:", editor_data);
 
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -86,6 +94,7 @@ const card = (
         <Typography gutterBottom color="white" variant="body1">
             {prompt}
         </Typography>
+      
           {/* <Alert variant="filled" severity="warning"  sx={{color:'warning.main',borderRadius:'10px', bgcolor:'rgb(59, 49, 35)'}}>
           <Grid container spacing={2}>
             <Grid size={8}>
@@ -100,6 +109,7 @@ const card = (
         </Alert> */}
        
   </CardContent>
+   
   </React.Fragment>
 );
   function handleChatSubmit() {
@@ -124,6 +134,12 @@ const card = (
           
           </OutlinedCard>
           </Box>
+           <Typography variant="body1" color="white" marginLeft={2} marginTop={2} paddingX={2} paddingBottom={2} >
+          Steps to be followed:
+          {steps.length === 0 ? <span> Loading...</span>: steps.map((step:any) => (
+            <li key={step.id}>{step.type} {step.title}</li>
+          )) }
+        </Typography>
             <Box display="flex" sx={{height:'100%',width:'100%',margin:"12px"}} alignItems="end" >
       <Box sx={{position:"relative",width:"100%"}}>
      <TextareaAutosize
