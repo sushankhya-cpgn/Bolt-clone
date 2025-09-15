@@ -10,11 +10,11 @@ import { IoMdArrowForward } from "react-icons/io";
 import FileExplorer from "../components/FileExplorer/FileExplorer";
 import convertToTree from "../utils/fileTreeConverter";
 import { Editor } from "@monaco-editor/react";
-import json from "../components/FileExplorer/data.json";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
 import type { List, Node } from "../type/ListType";
 import {StepType, type Step } from "../type/StepType";
+import { useWebcontainer } from "../src/hooks/useWebcontainer";
 
 
 
@@ -27,11 +27,19 @@ function AppBuilder({ height = "100vh" }) {
   const {prompt} = location.state || {};
   const [template, setTemplate] = useState([]);
   const [selectedFile, setSelectedFile] = useState<Node|null>(null);
+  // const [output, setOutput] = useState<string>("");
   const[data,setData] = useState([{}]);
+  const[errroMsg,setErrorMsg] = useState("");
   console.log("Prompt:", prompt);
 
   const [steps,setSteps] = useState([{}]);
+  const {webcontainer,output} = useWebcontainer();
   // Step 1: Send the prompt to the backend and get the template
+
+//   async function runSelectedFile() {
+  
+// }
+
  async function init() {
   try {
     // 1. First request → /template
@@ -57,12 +65,54 @@ function AppBuilder({ height = "100vh" }) {
 
     const editor_data = convertToTree(generated_steps || []);
     setData(editor_data);
+//     const files = {
+//   'package.json': {
+//     file: {
+//       contents: `
+//         {
+//           "name": "vite-starter",
+//           "private": true,
+//           "version": "0.0.0",
+//           "type": "module",
+//           "scripts": {
+//             "dev": "vite",
+//             "build": "vite build",
+//             "preview": "vite preview"
+//           },
+//           "devDependencies": {
+//             "vite": "^4.0.4"
+//           }
+//         }`,
+//     },
+//   },
+//   'index.html': {
+//     file: {
+//       contents: `
+//         <!DOCTYPE html>
+//         <html lang="en">
+//           <head>
+//             <meta charset="UTF-8" />
+//             <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+//             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+//             <title>Vite App</title>
+//           </head>
+//           <body>
+//             <div id="app"></div>
+//             <script type="module" src="/src/main.js"></script>
+//           </body>
+//         </html>`,
+//     },
+//   },
+// };
+  // await webcontainer?.mount(files);
     
-    console.log("Editor Data:", editor_data);
+  //   console.log("Editor Data:", editor_data);
+    
 
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("Axios error:", error.response?.data || error.message);
+      setErrorMsg(error.response?.data?.message || "An error occurred while processing your request.");
     } else {
       console.error("Unexpected error:", error);
     }
@@ -72,18 +122,9 @@ function AppBuilder({ height = "100vh" }) {
   }
 }
 
-
-  // async function getCode(){
-  //   const response = await axios.post(`${API_URL}/chat`,{
-  //     prompt: template
-  //   })
-  //   console.log('Response of code',response);
-  // }
-
   useEffect(() => {
     init();
-    // getCode();
-
+  
   }, []);
 
 const card = (
@@ -95,18 +136,18 @@ const card = (
             {prompt}
         </Typography>
       
-          {/* <Alert variant="filled" severity="warning"  sx={{color:'warning.main',borderRadius:'10px', bgcolor:'rgb(59, 49, 35)'}}>
+         { errroMsg && <Alert variant="filled" severity="warning"  sx={{color:'warning.main',borderRadius:'10px', bgcolor:'rgb(59, 49, 35)'}}>
           <Grid container spacing={2}>
             <Grid size={8}>
          
           <AlertTitle sx={{color:'warning.main', fontWeight:'bold'}}>Error</AlertTitle>
-          <Typography  color="grey" variant="subtitle2">You cancelled this message</Typography>
+          <Typography  color="grey" variant="subtitle2">{errroMsg}</Typography>
         </Grid>
          <Grid size={4}>
             <Button  variant="contained" color="warning" size="small">Retry</Button>
         </Grid>
         </Grid>
-        </Alert> */}
+        </Alert>}
        
   </CardContent>
    
@@ -134,12 +175,12 @@ const card = (
           
           </OutlinedCard>
           </Box>
-           <Typography variant="body1" color="white" marginLeft={2} marginTop={2} paddingX={2} paddingBottom={2} >
+          {!errroMsg && <Typography variant="body1" color="white" marginLeft={2} marginTop={2} paddingX={2} paddingBottom={2} >
           Steps to be followed:
           {steps.length === 0 ? <span> Loading...</span>: steps.map((step:any) => (
             <li key={step.id}>{step.type} {step.title}</li>
           )) }
-        </Typography>
+        </Typography>}
             <Box display="flex" sx={{height:'100%',width:'100%',margin:"12px"}} alignItems="end" >
       <Box sx={{position:"relative",width:"100%"}}>
      <TextareaAutosize
@@ -171,15 +212,16 @@ const card = (
           <Box display="flex" justifyContent="flex-start" padding={2}>
             <ButtonGroup>
               <Button >Code</Button>
-              <Button>Preview</Button>
+              <Button >Preview</Button>
             </ButtonGroup>
           </Box>
-          {chatSubmitted ?   <Box display={"flex"} height="100%" >
+          {chatSubmitted ?   
+        <Box display={"flex"} height="100%" >
          <FileExplorer data={data} onFileSelect={setSelectedFile}/>
 
         <Box sx={{ flex: 1, overflow: "hidden" }}>
+          
   <Editor
-
     defaultLanguage="javascript"
     defaultValue="// some comment"
     value={selectedFile?.content || ""}
@@ -187,8 +229,8 @@ const card = (
     options={{ minimap: { enabled: false }, wordWrap: "on" }}
 
   />
+   
 </Box>
-
           </Box>
           : <Box display="flex" justifyContent="center" alignItems="center" height="100%" >
   <Typography variant="body1" sx={{ color: "gray" }}>
@@ -196,9 +238,17 @@ const card = (
   </Typography>
         
         </Box>}
+        <Box height={"30%"} padding={1}>
+          <Box color={"white"} bgcolor={"black"} height={"100%"} border={1} padding={2} >
+              {output.map((cmd)=>(
+                <Typography>{cmd}</Typography>
+        ))}
+          </Box>
+        </Box>
         </Box>
       </Box>
     </Box>
   );
 }
 export default AppBuilder;
+
