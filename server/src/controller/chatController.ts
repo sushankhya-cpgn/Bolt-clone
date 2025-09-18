@@ -24,7 +24,8 @@ export const chatController = async(req:Request,res:Response,next:NextFunction)=
                 }
             ],
             // model:"llama-3.3-70b-versatile",
-            model:"llama-3.1-8b-instant",
+            // model:"llama-3.1-8b-instant",
+            model:"llama-3.3-70b-versatile",
             temperature: 0.5,
             max_completion_tokens:8000,
             top_p:1,
@@ -32,6 +33,7 @@ export const chatController = async(req:Request,res:Response,next:NextFunction)=
         })
 
         res.status(200).json({message:response?.choices[0]?.message?.content ||""});
+        console.log(response?.choices[0]?.message?.content);
     }
     catch(error){
         console.log(error)
