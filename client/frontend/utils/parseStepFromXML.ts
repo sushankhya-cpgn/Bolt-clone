@@ -19,12 +19,12 @@ Output:
 ]
 */
 
-import {type Step,  StepType } from "../type/StepType";
+import { type Step, StepType } from "../type/StepType";
 
-export default function parseStepXML(response: string):Step[]{
+export default function parseStepXML(response: string): Step[] {
     console.log("Parsing XML Response:", response);
     const xmlMatch = response.match((/<boltArtifact[^>]*>([\s\S]*?)<\/boltArtifact>/))
-    if(!xmlMatch){
+    if (!xmlMatch) {
         return [];
     }
 
@@ -43,37 +43,37 @@ export default function parseStepXML(response: string):Step[]{
         type: StepType.CreateFolder,
         status: "pending"
     })
-        // Process each boltAction
-        const actionRegex = /<boltAction[^>]*type="([^"]*)"[^>]*filePath="([^"]*)"[^>]*>([\s\S]*?)<\/boltAction>/g;
-        let match;
+    // Process each boltAction
+    const actionRegex = /<boltAction[^>]*type="([^"]*)"[^>]*filePath="([^"]*)"[^>]*>([\s\S]*?)<\/boltAction>/g;
+    let match;
 
-        while ((match = actionRegex.exec(xmlContent)) !== null) {
-            const [, type, filePath, code] = match;
+    while ((match = actionRegex.exec(xmlContent)) !== null) {
+        const [, type, filePath, code] = match;
 
-            if(type === "file"){
-                steps.push({
-                    id: stepId++,
-                    title: filePath || "New File",
-                    description: "",
-                    type: StepType.CreateFile,
-                    status: "pending",
-                    code: code.trim()
-                })
-            }
+        if (type === "file") {
+            steps.push({
+                id: stepId++,
+                title: filePath || "New File",
+                description: "",
+                type: StepType.CreateFile,
+                status: "pending",
+                code: code.trim()
+            })
+        }
 
-           else if(type === "script"){
-                steps.push({
-                    id: stepId++,
-                    title: filePath || "Run Script",
-                    description: "",
-                    type: StepType.RunScript,
-                    status: "pending",
-                    code: code.trim()
-                })
+        else if (type === "script") {
+            steps.push({
+                id: stepId++,
+                title: filePath || "Run Script",
+                description: "",
+                type: StepType.RunScript,
+                status: "pending",
+                code: code.trim()
+            })
 
-            
-            }
-       }
 
-       return steps;
+        }
+    }
+
+    return steps;
 }
