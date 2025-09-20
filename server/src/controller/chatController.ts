@@ -21,6 +21,10 @@ export const chatController = async(req:Request,res:Response,next:NextFunction)=
                 {
                     role:"user",
                     content: prompts
+                },
+                {
+                    role:"user",
+                    content:"Create all necessary files and donot miss any import files like index.html"
                 }
             ],
             // model:"llama-3.3-70b-versatile",

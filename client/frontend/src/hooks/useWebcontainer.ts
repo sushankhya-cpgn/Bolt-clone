@@ -1,9 +1,9 @@
 import { WebContainer } from '@webcontainer/api';
 import { useEffect, useState } from 'react';
+import { useRef } from 'react';
 
 
 export function useWebcontainer() {
-
   const [webcontainerInstance, setWebcontainerInstance] = useState<WebContainer | null>(null);
   const [output, setOutput] = useState([""]);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
@@ -14,7 +14,12 @@ export function useWebcontainer() {
     process?.output.pipeTo(new WritableStream({
       write: (chunk) => {
         const chunkStr = String(chunk)
-        setOutput((prevOutput) => [...prevOutput, chunkStr])
+        // setOutput((prevOutput) => [...prevOutput, chunkStr])
+        setOutput((prevOutput) => {
+          const currOutput = [...prevOutput,chunkStr];
+          return currOutput.length>500? currOutput.slice(-500) : currOutput;
+        })
+
 
       }
     }))
@@ -67,6 +72,7 @@ export function useWebcontainer() {
     }
 
   }, [])
+
 
   return { webcontainerInstance, output, runCommand, serverUrl, isBooting };
 }
