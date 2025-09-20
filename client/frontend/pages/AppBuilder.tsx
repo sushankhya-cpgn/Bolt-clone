@@ -59,432 +59,438 @@ function AppBuilder({ height = "100vh" }) {
   console.log("Prompt:", prompt);
 
   const [steps, setSteps] = useState([{}]);
-  const { webcontainerInstance, output, runCommand, serverUrl, isBooting } = useWebcontainer();
+  // const { webcontainerInstance, output, runCommand, serverUrl, isBooting } = useWebcontainer();
 
 
-  function handleRun() {
-    if (!command.trim()) {
-      return;
-    }
-
-    const cmd = command.split(' ')[0];
-    const args = command.split(' ').slice(1);
-
-    runCommand(cmd, args);
-    console.log(cmd, args);
-  }
-
-  //  async function init() {
-  //   try {
-  //     // 1. First request → /template
-  //      await runCommand('echo',['Hello','World']);
-  //     const response = await axios.post(`${API_URL}/template`, {
-  //       prompt
-  //     });
-
-  //     const newtemplate = response.data?.prompts || [];
-  //     setTemplate(newtemplate);
-  //     console.log("Template:", newtemplate);
-
-  //     // const generated_steps = parseStepFromXML(newtemplate[1] || "");
-  //     // setSteps(generated_steps.map((step: Step) => ({ ...step, status: "completed" })));
-
-  //     // 2. Second request → /chat
-  //     const response2 = await axios.post(`${API_URL}/chat`, {
-  //       prompts: [...newtemplate, prompt]
-  //     });
-
-  //     console.log("Response from /chat:", response2.data);
-  //     const generated_steps = parseStepFromXML(response2.data.message || "");
-  //     setSteps(generated_steps.map((step: Step) => ({ ...step, status: "completed" })));
-
-  //     const editor_data = convertToTree(generated_steps || []);
-  //     setData(editor_data);
-
-
-  //   } catch (error) {
-  //     if (axios.isAxiosError(error)) {
-  //       console.error("Axios error:", error.response?.data || error.message);
-  //       setErrorMsg(error.response?.data?.message || "An error occurred while processing your request.");
-  //     } else {
-  //       console.error("Unexpected error:", error);
-  //     }
+  // function handleRun() {
+  //   if (!command.trim()) {
+  //     return;
   //   }
-  //   finally{
-  //     setChatSubmitted(true);
-  //   }
+
+  //   const cmd = command.split(' ')[0];
+  //   const args = command.split(' ').slice(1);
+
+  //   runCommand(cmd, args);
+  //   console.log(cmd, args);
   // }
 
-  async function init() {
-    if (isBooting || !webcontainerInstance) {
-      console.log("Waiting for webcontainer to initialize");
-      return;
-    }
+   async function init() {
     try {
-      // Test WebContainer command
-      await runCommand('echo', ['Hello', 'World']);
-
       // 1. First request → /template
-      const response = await axios.post(`${API_URL}/template`, { prompt });
-      const newTemplate = response.data?.prompts || [];
-      setTemplate(newTemplate);
-      console.log('Template:', newTemplate);
+      //  await runCommand('echo',['Hello','World']);
+      const response = await axios.post(`${API_URL}/template`, {
+        prompt
+      });
+      console.log('response for template');
 
+      console.log(response);
+      const newtemplate = response.data?.prompts || [];
+      setTemplate(newtemplate);
+      console.log("Template:", newtemplate);
+
+      // const generated_steps = parseStepFromXML(newtemplate[1] || "");
+      // setSteps(generated_steps.map((step: Step) => ({ ...step, status: "completed" })));
+      console.log('Send array is',[...newtemplate, prompt])
       // 2. Second request → /chat
       const response2 = await axios.post(`${API_URL}/chat`, {
-        prompts: [...newTemplate, prompt],
+        prompts: [...newtemplate, prompt]
       });
-      console.log('Response from /chat:', response2.data);
 
-      const generatedSteps = parseStepFromXML(response2.data.message || '');
-      setSteps(generatedSteps.map((step: Step) => ({ ...step, status: 'completed' })));
+      console.log("Response from /chat:", response2);
+      console.log("Response from /chat:", response2.data);
 
-      // 3. Convert editor_data to FileSystemTree and mount to WebContainer
-      const editorData = convertToTree(generatedSteps || []);
-      setData(editorData);
+      const generated_steps = parseStepFromXML(response2.data.message || "");
+      setSteps(generated_steps.map((step: Step) => ({ ...step, status: "completed" })));
 
-      const fileSystemTree = convertToFileSystemTree(editorData);
-      console.log('Conversion to suitable format for webcontainers to preview in an iframe: ', fileSystemTree);
-// const minimalFileSystemTree = {
-//   'package.json': {
-//     file: {
-//       contents: `{
-//         "name": "todo-app",
-//         "private": true,
-//         "version": "0.0.0",
-//         "type": "module",
-//         "scripts": {
-//           "dev": "vite",
-//           "build": "vite build",
-//           "lint": "eslint .",
-//           "preview": "vite preview"
-//         },
-//         "dependencies": {
-//           "lucide-react": "^0.344.0",
-//           "react": "^18.3.1",
-//           "react-dom": "^18.3.1"
-//         },
-//         "devDependencies": {
-//           "@eslint/js": "^9.9.1",
-//           "@types/react": "^18.3.5",
-//           "@types/react-dom": "^18.3.0",
-//           "@vitejs/plugin-react": "^4.3.1",
-//           "autoprefixer": "^10.4.18",
-//           "eslint": "^9.9.1",
-//           "eslint-plugin-react-hooks": "^5.1.0-rc.0",
-//           "globals": "^15.9.0",
-//           "postcss": "^8.4.35",
-//           "tailwindcss": "^3.4.1",
-//           "typescript": "^5.5.3",
-//           "typescript-eslint": "^8.3.0",
-//           "vite": "^5.4.2"
-//         }
-//       }`,
-//     },
-//   },
-//   'vite.config.ts': {
-//     file: {
-//       contents: `
-//         import { defineConfig } from 'vite';
-//         import react from '@vitejs/plugin-react';
+      const editor_data = convertToTree(generated_steps || []);
+      setData(editor_data);
 
-//         export default defineConfig({
-//           plugins: [react()],
-//           server: {
-//             port: 5173,
-//           },
-//           optimizeDeps: {
-//             exclude: ['lucide-react'],
-//           },
-//         });
-//       `,
-//     },
-//   },
-//   'index.html': {
-//     file: {
-//       contents: `
-//         <!DOCTYPE html>
-//         <html lang="en">
-//           <head>
-//             <meta charset="UTF-8" />
-//             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-//             <title>Todo App</title>
-//           </head>
-//           <body>
-//             <div id="root"></div>
-//             <script type="module" src="/src/main.tsx"></script>
-//           </body>
-//         </html>
-//       `,
-//     },
-//   },
-//   'postcss.config.js': {
-//     file: {
-//       contents: `
-//         export default {
-//           plugins: {
-//             tailwindcss: {},
-//             autoprefixer: {},
-//           },
-//         };
-//       `,
-//     },
-//   },
-//   'tailwind.config.js': {
-//     file: {
-//       contents: `
-//         /** @type {import('tailwindcss').Config} */
-//         export default {
-//           content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
-//           theme: {
-//             extend: {
-//               colors: {
-//                 primary: '#3498db',
-//                 secondary: '#2ecc71',
-//                 background: '#f1c40f',
-//                 text: '#2c3e50',
-//               },
-//             },
-//           },
-//           plugins: [],
-//         };
-//       `,
-//     },
-//   },
-//   'tsconfig.json': {
-//     file: {
-//       contents: `
-//         {
-//           "files": [],
-//           "references": [
-//             { "path": "./tsconfig.app.json" },
-//             { "path": "./tsconfig.node.json" }
-//           ]
-//         }
-//       `,
-//     },
-//   },
-//   'tsconfig.app.json': {
-//     file: {
-//       contents: `
-//         {
-//           "compilerOptions": {
-//             "target": "ES2020",
-//             "useDefineForClassFields": true,
-//             "lib": ["ES2020", "DOM", "DOM.Iterable"],
-//             "module": "ESNext",
-//             "skipLibCheck": true,
-//             "moduleResolution": "bundler",
-//             "allowImportingTsExtensions": true,
-//             "isolatedModules": true,
-//             "moduleDetection": "force",
-//             "noEmit": true,
-//             "jsx": "react-jsx",
-//             "strict": true,
-//             "noUnusedLocals": true,
-//             "noUnusedParameters": true,
-//             "noFallthroughCasesInSwitch": true
-//           },
-//           "include": ["src"]
-//         }
-//       `,
-//     },
-//   },
-//   'tsconfig.node.json': {
-//     file: {
-//       contents: `
-//         {
-//           "compilerOptions": {
-//             "target": "ES2022",
-//             "lib": ["ES2023"],
-//             "module": "ESNext",
-//             "skipLibCheck": true,
-//             "moduleResolution": "bundler",
-//             "allowImportingTsExtensions": true,
-//             "isolatedModules": true,
-//             "moduleDetection": "force",
-//             "noEmit": true,
-//             "strict": true,
-//             "noUnusedLocals": true,
-//             "noUnusedParameters": true,
-//             "noFallthroughCasesInSwitch": true
-//           },
-//           "include": ["vite.config.ts"]
-//         }
-//       `,
-//     },
-//   },
-//   'src': {
-//     directory: {
-//       'main.tsx': {
-//         file: {
-//           contents: `
-//             import { StrictMode } from 'react';
-//             import { createRoot } from 'react-dom/client';
-//             import App from './App.tsx';
-//             import './index.css';
 
-//             createRoot(document.getElementById('root')!).render(
-//               <StrictMode>
-//                 <App />
-//               </StrictMode>
-//             );
-//           `,
-//         },
-//       },
-//       'App.tsx': {
-//         file: {
-//           contents: `
-//             import React from 'react';
-//             import { useReducer } from 'react';
-           
-
-//             interface TodoItem {
-//               id: number;
-//               text: string;
-//               completed: boolean;
-//             }
-
-//             interface TodoState {
-//               items: TodoItem[];
-//             }
-
-//             const reducer = (state: TodoState, action: any) => {
-//               switch (action.type) {
-//                 case 'ADD_ITEM':
-//                   return { ...state, items: [...state.items, action.payload] };
-//                 case 'REMOVE_ITEM':
-//                   return {
-//                     ...state,
-//                     items: state.items.filter((item) => item.id !== action.payload),
-//                   };
-//                 case 'TOGGLE_ITEM':
-//                   return {
-//                     ...state,
-//                     items: state.items.map((item) => {
-//                       if (item.id === action.payload) {
-//                         return { ...item, completed: !item.completed };
-//                       }
-//                       return item;
-//                     }),
-//                   };
-//                 default:
-//                   return state;
-//               }
-//             };
-
-//             const initialState: TodoState = { items: [] };
-
-//             const App = () => {
-//               const [state, dispatch] = useReducer(reducer, initialState);
-
-//               const handleAddItem = (text: string) => {
-//                 dispatch({ type: 'ADD_ITEM', payload: { id: Date.now(), text, completed: false } });
-//               };
-
-//               const handleRemoveItem = (id: number) => {
-//                 dispatch({ type: 'REMOVE_ITEM', payload: id });
-//               };
-
-//               const handleToggleItem = (id: number) => {
-//                 dispatch({ type: 'TOGGLE_ITEM', payload: id });
-//               };
-
-//               return (
-//                 <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-//                   <div className="bg-white rounded shadow-md p-4 w-1/2">
-//                     <h1 className="text-2xl font-bold mb-4">Todo App</h1>
-//                     <ul className="list-none mb-4">
-//                       {state.items.map((item) => (
-//                         <li key={item.id} className="mb-2">
-//                           <span
-//                             className={\`mr-2 \${item.completed ? 'line-through' : 'text-gray-600'}\`}
-//                           >
-//                             {item.text}
-//                           </span>
-//                           <button
-//                             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded ml-2"
-//                             onClick={() => handleToggleItem(item.id)}
-//                           >
-                            
-//                           </button>
-//                           <button
-//                             className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded ml-2"
-//                             onClick={() => handleRemoveItem(item.id)}
-//                           >
-                           
-//                           </button>
-//                         </li>
-//                       ))}
-//                     </ul>
-//                     <input
-//                       type="text"
-//                       className="w-full p-2 mb-4 border border-gray-400 rounded"
-//                       placeholder="Add new item"
-//                       onKeyPress={(e) => {
-//                         if (e.key === 'Enter') {
-//                           handleAddItem(e.target.value);
-//                           e.target.value = '';
-//                         }
-//                       }}
-//                     />
-//                   </div>
-//                 </div>
-//               );
-//             };
-
-//             export default App;
-//           `,
-//         },
-//       },
-//       'index.css': {
-//         file: {
-//           contents: `
-//             @tailwind base;
-//             @tailwind components;
-//             @tailwind utilities;
-//           `,
-//         },
-//       },
-//     },
-//   },
-// };
-      if (webcontainerInstance) {
-        await webcontainerInstance.mount(fileSystemTree);
-        // await webcontainerInstance.mount(minimalFileSystemTree);
-
-        console.log('Files mounted to WebContainer:', fileSystemTree);
-        console.log('Files mounted to WebContainer:', fileSystemTree);
-
-        // 4. Install dependencies and start the server
-        const installProcess = await runCommand('npm', ['install']);
-        await installProcess?.exit;
-        console.log('Dependencies installed');
-        await runCommand('npm', ['run','dev']);
-        console.log('Server started');
-      } else {
-        console.error('WebContainer instance is not available');
-        setErrorMsg('WebContainer instance is not initialized.');
-      }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error('Axios error:', error.response?.data || error.message);
-        setErrorMsg(error.response?.data?.message || 'An error occurred while processing your request.');
+        console.error("Axios error:", error.response?.data || error.message);
+        setErrorMsg(error.response?.data?.message || "An error occurred while processing your request.");
       } else {
-        console.error('Unexpected error:', error);
-        setErrorMsg('An unexpected error occurred.');
+        console.error("Unexpected error:", error);
       }
-    } finally {
+    }
+    finally{
       setChatSubmitted(true);
     }
   }
 
-  useEffect(() => {
-    if (webcontainerInstance && !isBooting) {
-      init();
-    }
+//   async function init() {
+//     if (isBooting || !webcontainerInstance) {
+//       console.log("Waiting for webcontainer to initialize");
+//       return;
+//     }
+//     try {
+//       // Test WebContainer command
+//       await runCommand('echo', ['Hello', 'World']);
 
-  }, [webcontainerInstance, isBooting]);
+//       // 1. First request → /template
+//       const response = await axios.post(`${API_URL}/template`, { prompt });
+//       const newTemplate = response.data?.prompts || [];
+//       setTemplate(newTemplate);
+//       console.log('Template:', newTemplate);
+
+//       // 2. Second request → /chat
+//       const response2 = await axios.post(`${API_URL}/chat`, {
+//         prompts: [...newTemplate, prompt],
+//       });
+//       console.log('Response from /chat:', response2.data);
+
+//       const generatedSteps = parseStepFromXML(response2.data.message || '');
+//       setSteps(generatedSteps.map((step: Step) => ({ ...step, status: 'completed' })));
+
+//       // 3. Convert editor_data to FileSystemTree and mount to WebContainer
+//       const editorData = convertToTree(generatedSteps || []);
+//       setData(editorData);
+
+//       const fileSystemTree = convertToFileSystemTree(editorData);
+//       console.log('Conversion to suitable format for webcontainers to preview in an iframe: ', fileSystemTree);
+// // const minimalFileSystemTree = {
+// //   'package.json': {
+// //     file: {
+// //       contents: `{
+// //         "name": "todo-app",
+// //         "private": true,
+// //         "version": "0.0.0",
+// //         "type": "module",
+// //         "scripts": {
+// //           "dev": "vite",
+// //           "build": "vite build",
+// //           "lint": "eslint .",
+// //           "preview": "vite preview"
+// //         },
+// //         "dependencies": {
+// //           "lucide-react": "^0.344.0",
+// //           "react": "^18.3.1",
+// //           "react-dom": "^18.3.1"
+// //         },
+// //         "devDependencies": {
+// //           "@eslint/js": "^9.9.1",
+// //           "@types/react": "^18.3.5",
+// //           "@types/react-dom": "^18.3.0",
+// //           "@vitejs/plugin-react": "^4.3.1",
+// //           "autoprefixer": "^10.4.18",
+// //           "eslint": "^9.9.1",
+// //           "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+// //           "globals": "^15.9.0",
+// //           "postcss": "^8.4.35",
+// //           "tailwindcss": "^3.4.1",
+// //           "typescript": "^5.5.3",
+// //           "typescript-eslint": "^8.3.0",
+// //           "vite": "^5.4.2"
+// //         }
+// //       }`,
+// //     },
+// //   },
+// //   'vite.config.ts': {
+// //     file: {
+// //       contents: `
+// //         import { defineConfig } from 'vite';
+// //         import react from '@vitejs/plugin-react';
+
+// //         export default defineConfig({
+// //           plugins: [react()],
+// //           server: {
+// //             port: 5173,
+// //           },
+// //           optimizeDeps: {
+// //             exclude: ['lucide-react'],
+// //           },
+// //         });
+// //       `,
+// //     },
+// //   },
+// //   'index.html': {
+// //     file: {
+// //       contents: `
+// //         <!DOCTYPE html>
+// //         <html lang="en">
+// //           <head>
+// //             <meta charset="UTF-8" />
+// //             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+// //             <title>Todo App</title>
+// //           </head>
+// //           <body>
+// //             <div id="root"></div>
+// //             <script type="module" src="/src/main.tsx"></script>
+// //           </body>
+// //         </html>
+// //       `,
+// //     },
+// //   },
+// //   'postcss.config.js': {
+// //     file: {
+// //       contents: `
+// //         export default {
+// //           plugins: {
+// //             tailwindcss: {},
+// //             autoprefixer: {},
+// //           },
+// //         };
+// //       `,
+// //     },
+// //   },
+// //   'tailwind.config.js': {
+// //     file: {
+// //       contents: `
+// //         /** @type {import('tailwindcss').Config} */
+// //         export default {
+// //           content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+// //           theme: {
+// //             extend: {
+// //               colors: {
+// //                 primary: '#3498db',
+// //                 secondary: '#2ecc71',
+// //                 background: '#f1c40f',
+// //                 text: '#2c3e50',
+// //               },
+// //             },
+// //           },
+// //           plugins: [],
+// //         };
+// //       `,
+// //     },
+// //   },
+// //   'tsconfig.json': {
+// //     file: {
+// //       contents: `
+// //         {
+// //           "files": [],
+// //           "references": [
+// //             { "path": "./tsconfig.app.json" },
+// //             { "path": "./tsconfig.node.json" }
+// //           ]
+// //         }
+// //       `,
+// //     },
+// //   },
+// //   'tsconfig.app.json': {
+// //     file: {
+// //       contents: `
+// //         {
+// //           "compilerOptions": {
+// //             "target": "ES2020",
+// //             "useDefineForClassFields": true,
+// //             "lib": ["ES2020", "DOM", "DOM.Iterable"],
+// //             "module": "ESNext",
+// //             "skipLibCheck": true,
+// //             "moduleResolution": "bundler",
+// //             "allowImportingTsExtensions": true,
+// //             "isolatedModules": true,
+// //             "moduleDetection": "force",
+// //             "noEmit": true,
+// //             "jsx": "react-jsx",
+// //             "strict": true,
+// //             "noUnusedLocals": true,
+// //             "noUnusedParameters": true,
+// //             "noFallthroughCasesInSwitch": true
+// //           },
+// //           "include": ["src"]
+// //         }
+// //       `,
+// //     },
+// //   },
+// //   'tsconfig.node.json': {
+// //     file: {
+// //       contents: `
+// //         {
+// //           "compilerOptions": {
+// //             "target": "ES2022",
+// //             "lib": ["ES2023"],
+// //             "module": "ESNext",
+// //             "skipLibCheck": true,
+// //             "moduleResolution": "bundler",
+// //             "allowImportingTsExtensions": true,
+// //             "isolatedModules": true,
+// //             "moduleDetection": "force",
+// //             "noEmit": true,
+// //             "strict": true,
+// //             "noUnusedLocals": true,
+// //             "noUnusedParameters": true,
+// //             "noFallthroughCasesInSwitch": true
+// //           },
+// //           "include": ["vite.config.ts"]
+// //         }
+// //       `,
+// //     },
+// //   },
+// //   'src': {
+// //     directory: {
+// //       'main.tsx': {
+// //         file: {
+// //           contents: `
+// //             import { StrictMode } from 'react';
+// //             import { createRoot } from 'react-dom/client';
+// //             import App from './App.tsx';
+// //             import './index.css';
+
+// //             createRoot(document.getElementById('root')!).render(
+// //               <StrictMode>
+// //                 <App />
+// //               </StrictMode>
+// //             );
+// //           `,
+// //         },
+// //       },
+// //       'App.tsx': {
+// //         file: {
+// //           contents: `
+// //             import React from 'react';
+// //             import { useReducer } from 'react';
+           
+
+// //             interface TodoItem {
+// //               id: number;
+// //               text: string;
+// //               completed: boolean;
+// //             }
+
+// //             interface TodoState {
+// //               items: TodoItem[];
+// //             }
+
+// //             const reducer = (state: TodoState, action: any) => {
+// //               switch (action.type) {
+// //                 case 'ADD_ITEM':
+// //                   return { ...state, items: [...state.items, action.payload] };
+// //                 case 'REMOVE_ITEM':
+// //                   return {
+// //                     ...state,
+// //                     items: state.items.filter((item) => item.id !== action.payload),
+// //                   };
+// //                 case 'TOGGLE_ITEM':
+// //                   return {
+// //                     ...state,
+// //                     items: state.items.map((item) => {
+// //                       if (item.id === action.payload) {
+// //                         return { ...item, completed: !item.completed };
+// //                       }
+// //                       return item;
+// //                     }),
+// //                   };
+// //                 default:
+// //                   return state;
+// //               }
+// //             };
+
+// //             const initialState: TodoState = { items: [] };
+
+// //             const App = () => {
+// //               const [state, dispatch] = useReducer(reducer, initialState);
+
+// //               const handleAddItem = (text: string) => {
+// //                 dispatch({ type: 'ADD_ITEM', payload: { id: Date.now(), text, completed: false } });
+// //               };
+
+// //               const handleRemoveItem = (id: number) => {
+// //                 dispatch({ type: 'REMOVE_ITEM', payload: id });
+// //               };
+
+// //               const handleToggleItem = (id: number) => {
+// //                 dispatch({ type: 'TOGGLE_ITEM', payload: id });
+// //               };
+
+// //               return (
+// //                 <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+// //                   <div className="bg-white rounded shadow-md p-4 w-1/2">
+// //                     <h1 className="text-2xl font-bold mb-4">Todo App</h1>
+// //                     <ul className="list-none mb-4">
+// //                       {state.items.map((item) => (
+// //                         <li key={item.id} className="mb-2">
+// //                           <span
+// //                             className={\`mr-2 \${item.completed ? 'line-through' : 'text-gray-600'}\`}
+// //                           >
+// //                             {item.text}
+// //                           </span>
+// //                           <button
+// //                             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded ml-2"
+// //                             onClick={() => handleToggleItem(item.id)}
+// //                           >
+                            
+// //                           </button>
+// //                           <button
+// //                             className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded ml-2"
+// //                             onClick={() => handleRemoveItem(item.id)}
+// //                           >
+                           
+// //                           </button>
+// //                         </li>
+// //                       ))}
+// //                     </ul>
+// //                     <input
+// //                       type="text"
+// //                       className="w-full p-2 mb-4 border border-gray-400 rounded"
+// //                       placeholder="Add new item"
+// //                       onKeyPress={(e) => {
+// //                         if (e.key === 'Enter') {
+// //                           handleAddItem(e.target.value);
+// //                           e.target.value = '';
+// //                         }
+// //                       }}
+// //                     />
+// //                   </div>
+// //                 </div>
+// //               );
+// //             };
+
+// //             export default App;
+// //           `,
+// //         },
+// //       },
+// //       'index.css': {
+// //         file: {
+// //           contents: `
+// //             @tailwind base;
+// //             @tailwind components;
+// //             @tailwind utilities;
+// //           `,
+// //         },
+// //       },
+// //     },
+// //   },
+// // };
+//       if (webcontainerInstance) {
+//         await webcontainerInstance.mount(fileSystemTree);
+//         // await webcontainerInstance.mount(minimalFileSystemTree);
+
+//         console.log('Files mounted to WebContainer:', fileSystemTree);
+//         console.log('Files mounted to WebContainer:', fileSystemTree);
+
+//         // 4. Install dependencies and start the server
+//         const installProcess = await runCommand('npm', ['install']);
+//         await installProcess?.exit;
+//         console.log('Dependencies installed');
+//         await runCommand('npm', ['run','dev']);
+//         console.log('Server started');
+//       } else {
+//         console.error('WebContainer instance is not available');
+//         setErrorMsg('WebContainer instance is not initialized.');
+//       }
+//     } catch (error) {
+//       if (axios.isAxiosError(error)) {
+//         console.error('Axios error:', error.response?.data || error.message);
+//         setErrorMsg(error.response?.data?.message || 'An error occurred while processing your request.');
+//       } else {
+//         console.error('Unexpected error:', error);
+//         setErrorMsg('An unexpected error occurred.');
+//       }
+//     } finally {
+//       setChatSubmitted(true);
+//     }
+//   }
+
+  
+  useEffect(() => {
+    
+      init();
+   
+
+  }, []);
+
 
   const card = (
     <React.Fragment>
@@ -636,17 +642,17 @@ function AppBuilder({ height = "100vh" }) {
               padding={2}
               overflow="auto"   // <-- scroll inside box
             >
-              {output.map((cmd, index) => (
+              {/* {output.map((cmd, index) => (
                 <Typography key={index}>{cmd}</Typography>
-              ))}
-              <input
+              ))} */}
+              {/* <input
                 type="text"
                 placeholder="Type your command"
                 className="bg-transparent outline-none  text-green-900"
                 onChange={(e) => setCommand(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleRun()}
                 style={{ width: '100%', color: 'green' }}
-              />
+              /> */}
             </Box>
           </Box>
         </Box>
