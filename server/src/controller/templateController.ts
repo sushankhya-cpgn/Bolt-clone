@@ -93,7 +93,7 @@ export const templateController = async (req: Request, res: Response, next: Next
         }
       ],
       model: "llama-3.3-70b-versatile",
-      // model:"openai/gpt-oss-120b",
+   
       temperature: 0,
       max_completion_tokens: 10,
       top_p: 1,

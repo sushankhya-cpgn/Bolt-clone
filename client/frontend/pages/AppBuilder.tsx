@@ -1,6 +1,6 @@
 import Navbar from "../components/Header/Navbar";
 import OutlinedCard from "../components/Card/card"
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import parseStepFromXML from "../utils/parseStepFromXML"
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
@@ -52,6 +52,7 @@ function AppBuilder({ height = "100vh" }) {
   const [selectedFile, setSelectedFile] = useState<Node | null>(null);
   const [command, setCommand] = useState("");
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
+  const terminalRef = useRef<HTMLDivElement|null>(null);
   const [conversation, setConversation] = useState<string[]>([])
   const [data, setData] = useState([{}]);
   const [errroMsg, setErrorMsg] = useState("");
@@ -61,6 +62,8 @@ function AppBuilder({ height = "100vh" }) {
   const [steps, setSteps] = useState([{}]);
   const { webcontainerInstance, output, runCommand, serverUrl, isBooting } = useWebcontainer();
 
+
+  
 
   function handleRun() {
     if (!command.trim()) {
@@ -113,6 +116,8 @@ function AppBuilder({ height = "100vh" }) {
         console.log('Files mounted to WebContainer:', fileSystemTree);
         console.log('Files mounted to WebContainer:', fileSystemTree);
 
+        setChatSubmitted(true);
+
         // 4. Install dependencies and start the server
         const installProcess = await runCommand('npm', ['install']);
         await installProcess?.exit;
@@ -131,12 +136,24 @@ function AppBuilder({ height = "100vh" }) {
         console.error('Unexpected error:', error);
         setErrorMsg('An unexpected error occurred.');
       }
-    } finally {
-      setChatSubmitted(true);
     }
   }
 
 
+
+  
+  // useEffect(() => {
+    
+  //     init();
+   
+
+  // }, []);
+
+  useEffect(()=>{
+    if(!terminalRef.current) return;
+    const logsContainer = terminalRef.current.children[0];
+    logsContainer.scrollTop = logsContainer.scrollHeight;
+  },[output])
 
   useEffect(() => {
     if (webcontainerInstance && !isBooting) {
@@ -338,28 +355,50 @@ function AppBuilder({ height = "100vh" }) {
             </Box>
           )}
 
-          <Box sx={{ flexShrink: 0, maxHeight: '30%', padding: 1 }}>
-            <Box
-              color="white"
-              bgcolor="black"
-              height="100%"
-              border={1}
-              padding={2}
-              overflow="auto"   // <-- scroll inside box
-            >
-              {output.map((cmd, index) => (
-                <Typography key={index}>{cmd}</Typography>
-              ))}
-              <input
-                type="text"
-                placeholder="Type your command"
-                className="bg-transparent outline-none  text-green-900"
-                onChange={(e) => setCommand(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleRun()}
-                style={{ width: '100%', color: 'green' }}
-              />
-            </Box>
-          </Box>
+<Box sx={{ height: "30%", padding: 1 }}>
+  <Box
+    color="white"
+    bgcolor="black"
+    border={1}
+    padding={2}
+    sx={{
+      height: "100%",
+      overflowY: "scroll",   // vertical scrolling
+      overflowX: "hidden", // prevent sideways scrolling
+      fontFamily: "monospace",
+      fontSize: "0.85rem",
+    }}
+    display="flex"
+    flexDirection="column"
+
+    ref={terminalRef}
+  >
+    <Box sx={{display:"flex", flexDirection:"column"}}>{output.map((cmd, index) => (
+      <Typography
+        key={index}
+        sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+      >
+        {cmd}
+      </Typography>
+    ))}</Box>
+    
+
+    <input
+      type="text"
+      placeholder="Type your command"
+      className="bg-transparent outline-none text-green-900"
+      onChange={(e) => setCommand(e.target.value)}
+      onKeyDown={(e) => e.key === "Enter" && handleRun()}
+      style={{
+        width: "100%",
+        color: "lightgreen",
+        background: "transparent",
+        border: "none",
+        outline: "none",
+      }}
+    />
+  </Box>
+</Box>
         </Box>
       </Box>
     </Box>
