@@ -8,8 +8,12 @@ export function useWebcontainer() {
   const [output, setOutput] = useState([""]);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const [isBooting, setIsBooting] = useState(false);
+ 
+
   const runCommand = async (cmd: string, args: string[]) => {
     if (!webcontainerInstance) return;
+
+
     const process = await webcontainerInstance?.spawn(cmd, args);
     process?.output.pipeTo(new WritableStream({
       write: (chunk) => {
@@ -18,6 +22,10 @@ export function useWebcontainer() {
 
       }
     }))
+
+    process.exit.then((code)=>{
+      setOutput((prev)=>[...prev,`Process exited with code ${code}`]);
+    })
     return process;
   }
   async function initWebcontainer() {
@@ -40,9 +48,8 @@ export function useWebcontainer() {
             setOutput((prevOutput) => [...prevOutput, chunk]);
           }
         }));
-
         instance.on("server-ready", (port, url) => {
-          setOutput((prev) => [...prev, `Server ready at ${url}`]);
+          setOutput((prev) => [...prev, `Server ready at ${url,port}`]);
           setServerUrl(url);
         })
 
