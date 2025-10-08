@@ -1,23 +1,36 @@
 import { WebContainer } from '@webcontainer/api';
 import { useEffect, useState } from 'react';
+import { useRef } from 'react';
 
 
 export function useWebcontainer() {
-
   const [webcontainerInstance, setWebcontainerInstance] = useState<WebContainer | null>(null);
   const [output, setOutput] = useState([""]);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const [isBooting, setIsBooting] = useState(false);
+ 
+
   const runCommand = async (cmd: string, args: string[]) => {
     if (!webcontainerInstance) return;
+
+
     const process = await webcontainerInstance?.spawn(cmd, args);
     process?.output.pipeTo(new WritableStream({
       write: (chunk) => {
         const chunkStr = String(chunk)
-        setOutput((prevOutput) => [...prevOutput, chunkStr])
+        // setOutput((prevOutput) => [...prevOutput, chunkStr])
+        setOutput((prevOutput) => {
+          const currOutput = [...prevOutput,chunkStr];
+          return currOutput.length>500? currOutput.slice(-500) : currOutput;
+        })
+
 
       }
     }))
+
+    process.exit.then((code)=>{
+      setOutput((prev)=>[...prev,`Process exited with code ${code}`]);
+    })
     return process;
   }
   async function initWebcontainer() {
@@ -40,9 +53,8 @@ export function useWebcontainer() {
             setOutput((prevOutput) => [...prevOutput, chunk]);
           }
         }));
-
         instance.on("server-ready", (port, url) => {
-          setOutput((prev) => [...prev, `Server ready at ${url}`]);
+          setOutput((prev) => [...prev, `Server ready at ${url}${port}`]);
           setServerUrl(url);
         })
 
@@ -67,6 +79,7 @@ export function useWebcontainer() {
     }
 
   }, [])
+
 
   return { webcontainerInstance, output, runCommand, serverUrl, isBooting };
 }

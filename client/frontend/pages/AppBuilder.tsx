@@ -1,6 +1,6 @@
 import Navbar from "../components/Header/Navbar";
 import OutlinedCard from "../components/Card/card"
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import parseStepFromXML from "../utils/parseStepFromXML"
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
@@ -52,15 +52,18 @@ function AppBuilder({ height = "100vh" }) {
   const [selectedFile, setSelectedFile] = useState<Node | null>(null);
   const [command, setCommand] = useState("");
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
-
-  // const [output, setOutput] = useState<string>("");
+  const terminalRef = useRef<HTMLDivElement|null>(null);
+  const [conversation, setConversation] = useState<string[]>([])
   const [data, setData] = useState([{}]);
   const [errroMsg, setErrorMsg] = useState("");
+  const [followupPrompt,setFollowupPrompt] = useState<string>("");
   console.log("Prompt:", prompt);
 
   const [steps, setSteps] = useState([{}]);
   const { webcontainerInstance, output, runCommand, serverUrl, isBooting } = useWebcontainer();
 
+
+  
 
   function handleRun() {
     if (!command.trim()) {
@@ -74,50 +77,7 @@ function AppBuilder({ height = "100vh" }) {
     console.log(cmd, args);
   }
 
-  //  async function init() {
-  //   try {
-  //     // 1. First request → /template
-  //     //  await runCommand('echo',['Hello','World']);
-  //     const response = await axios.post(`${API_URL}/template`, {
-  //       prompt
-  //     });
-  //     console.log('response for template');
 
-  //     console.log(response);
-  //     const newtemplate = response.data?.prompts || [];
-  //     setTemplate(newtemplate);
-  //     console.log("Template:", newtemplate);
-
-  //     // const generated_steps = parseStepFromXML(newtemplate[1] || "");
-  //     // setSteps(generated_steps.map((step: Step) => ({ ...step, status: "completed" })));
-  //     console.log('Send array is',[...newtemplate, prompt])
-  //     // 2. Second request → /chat
-  //     const response2 = await axios.post(`${API_URL}/chat`, {
-  //       prompts: [...newtemplate, prompt]
-  //     });
-
-  //     console.log("Response from /chat:", response2);
-  //     console.log("Response from /chat:", response2.data);
-
-  //     const generated_steps = parseStepFromXML(response2.data.message || "");
-  //     setSteps(generated_steps.map((step: Step) => ({ ...step, status: "completed" })));
-
-  //     const editor_data = convertToTree(generated_steps || []);
-  //     setData(editor_data);
-
-
-  //   } catch (error) {
-  //     if (axios.isAxiosError(error)) {
-  //       console.error("Axios error:", error.response?.data || error.message);
-  //       setErrorMsg(error.response?.data?.message || "An error occurred while processing your request.");
-  //     } else {
-  //       console.error("Unexpected error:", error);
-  //     }
-  //   }
-  //   finally{
-  //     setChatSubmitted(true);
-  //   }
-  // }
 
   async function init() {
     if (isBooting || !webcontainerInstance) {
@@ -139,7 +99,7 @@ function AppBuilder({ height = "100vh" }) {
         prompts: [...newTemplate, prompt],
       });
       console.log('Response from /chat:', response2.data);
-
+      setConversation([...newTemplate, prompt, response2.data.message]);
       const generatedSteps = parseStepFromXML(response2.data.message || '');
       setSteps(generatedSteps.map((step: Step) => ({ ...step, status: 'completed' })));
 
@@ -152,16 +112,17 @@ function AppBuilder({ height = "100vh" }) {
 
       if (webcontainerInstance) {
         await webcontainerInstance.mount(fileSystemTree);
-        // await webcontainerInstance.mount(minimalFileSystemTree);
 
         console.log('Files mounted to WebContainer:', fileSystemTree);
         console.log('Files mounted to WebContainer:', fileSystemTree);
+
+        setChatSubmitted(true);
 
         // 4. Install dependencies and start the server
         const installProcess = await runCommand('npm', ['install']);
         await installProcess?.exit;
         console.log('Dependencies installed');
-        await runCommand('npm', ['run','dev']);
+        await runCommand('npm', ['run', 'dev']);
         console.log('Server started');
       } else {
         console.error('WebContainer instance is not available');
@@ -175,10 +136,10 @@ function AppBuilder({ height = "100vh" }) {
         console.error('Unexpected error:', error);
         setErrorMsg('An unexpected error occurred.');
       }
-    } finally {
-      setChatSubmitted(true);
     }
   }
+
+
 
   
   // useEffect(() => {
@@ -187,6 +148,12 @@ function AppBuilder({ height = "100vh" }) {
    
 
   // }, []);
+
+  useEffect(()=>{
+    if(!terminalRef.current) return;
+    const logsContainer = terminalRef.current.children[0];
+    logsContainer.scrollTop = logsContainer.scrollHeight;
+  },[output])
 
   useEffect(() => {
     if (webcontainerInstance && !isBooting) {
@@ -222,8 +189,57 @@ function AppBuilder({ height = "100vh" }) {
 
     </React.Fragment>
   );
-  function handleChatSubmit() {
-    setChatSubmitted(true);
+  async function handleChatSubmit(usermessage: string) {
+
+    try {
+      const updatedMessage = [...conversation, usermessage];
+
+      // Request to /chat endpoint
+      const response = await axios.post(`${API_URL}/chat`, {
+        prompts: updatedMessage
+      });
+
+      const generatedSteps = parseStepFromXML(response.data.message);
+      setSteps(generatedSteps.map((step: Step) => ({ ...step, status: 'completed' })));
+
+      const editorData = convertToTree(generatedSteps || []);
+      setData(editorData);
+
+      const fileSystemTree = convertToFileSystemTree(editorData);
+      console.log('Conversion to suitable format for webcontainers to preview in an iframe: ', fileSystemTree);
+
+      if (webcontainerInstance) {
+        await webcontainerInstance.mount(fileSystemTree);
+
+        console.log('Files mounted to WebContainer:', fileSystemTree);
+        console.log('Files mounted to WebContainer:', fileSystemTree);
+
+        // 4. Install dependencies and start the server
+        const installProcess = await runCommand('npm', ['install']);
+        await installProcess?.exit;
+        console.log('Dependencies installed');
+        await runCommand('npm', ['run', 'dev']);
+        console.log('Server started');
+      } else {
+        console.error('WebContainer instance is not available');
+        setErrorMsg('WebContainer instance is not initialized.');
+      }
+    }
+    // setChatSubmitted(true);
+
+    catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error:', error.response?.data || error.message);
+        setErrorMsg(error.response?.data?.message || 'An error occurred while processing your request.');
+      } else {
+        console.error('Unexpected error:', error);
+        setErrorMsg('An unexpected error occurred.');
+      }
+    } finally {
+      setChatSubmitted(true);
+    }
+
+
   }
 
 
@@ -269,9 +285,11 @@ function AppBuilder({ height = "100vh" }) {
                   color: 'white',
                   border: '1px solid grey'
                 }}
+                value={followupPrompt}
+                onChange={(e)=>setFollowupPrompt(e.target.value)}
               />
 
-              <Button variant="contained" sx={{ position: 'absolute', right: 4, top: 4 }} onClick={handleChatSubmit}><IoMdArrowForward />
+              <Button variant="contained" sx={{ position: 'absolute', right: 4, top: 4 }} onClick={()=>handleChatSubmit(followupPrompt)}><IoMdArrowForward />
               </Button>
             </Box>
           </Box>
@@ -337,28 +355,50 @@ function AppBuilder({ height = "100vh" }) {
             </Box>
           )}
 
-          <Box sx={{ flexShrink: 0, maxHeight: '30%', padding: 1 }}>
-            <Box
-              color="white"
-              bgcolor="black"
-              height="100%"
-              border={1}
-              padding={2}
-              overflow="auto"   // <-- scroll inside box
-            >
-              {output.map((cmd, index) => (
-                <Typography key={index}>{cmd}</Typography>
-              ))}
-               <input
-                type="text"
-                placeholder="Type your command"
-                className="bg-transparent outline-none  text-green-900"
-                onChange={(e) => setCommand(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleRun()}
-                style={{ width: '100%', color: 'green' }}
-              />
-            </Box>
-          </Box>
+<Box sx={{ height: "30%", padding: 1 }}>
+  <Box
+    color="white"
+    bgcolor="black"
+    border={1}
+    padding={2}
+    sx={{
+      height: "100%",
+      overflowY: "scroll",   // vertical scrolling
+      overflowX: "hidden", // prevent sideways scrolling
+      fontFamily: "monospace",
+      fontSize: "0.85rem",
+    }}
+    display="flex"
+    flexDirection="column"
+
+    ref={terminalRef}
+  >
+    <Box sx={{display:"flex", flexDirection:"column"}}>{output.map((cmd, index) => (
+      <Typography
+        key={index}
+        sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+      >
+        {cmd}
+      </Typography>
+    ))}</Box>
+    
+
+    <input
+      type="text"
+      placeholder="Type your command"
+      className="bg-transparent outline-none text-green-900"
+      onChange={(e) => setCommand(e.target.value)}
+      onKeyDown={(e) => e.key === "Enter" && handleRun()}
+      style={{
+        width: "100%",
+        color: "lightgreen",
+        background: "transparent",
+        border: "none",
+        outline: "none",
+      }}
+    />
+  </Box>
+</Box>
         </Box>
       </Box>
     </Box>
