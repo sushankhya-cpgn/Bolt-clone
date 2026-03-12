@@ -18,7 +18,7 @@ function ChatArea() {
     e.preventDefault();
     console.log("Sending:", chat);
     if(chat.trim()){
-      navigate('/builder',{state:{prompt:chat}});
+      navigate('/builder',{state:{initialprompt:chat}});
 
     }
       dispatch(clearText());

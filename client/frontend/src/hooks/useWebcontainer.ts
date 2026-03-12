@@ -1,6 +1,5 @@
 import { WebContainer } from '@webcontainer/api';
 import { useEffect, useState } from 'react';
-import { useRef } from 'react';
 
 
 export function useWebcontainer() {
