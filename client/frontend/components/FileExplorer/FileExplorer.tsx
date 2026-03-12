@@ -22,7 +22,7 @@ const List = ({ list, onFileSelect }:{list:List,onFileSelect:(file:Node)=>void})
       {list.map((node:Node, index:number) => (
         <Box key={index} sx={{ marginLeft: node.children ? 2 : 0, cursor: "pointer" , userSelect:"none", paddingY:0.5,   marginBottom:"4px" }}>
           <Box display={"flex"} justifyItems={"center"} 
-          sx={{"&:hover":{backgroundColor:"azure", borderRadius:2}, paddingX:1, paddingY:0.5, display:"flex", gap:1, overflow:"scroll" }}
+          sx={{"&:hover":{backgroundColor:"azure", borderRadius:2}, paddingX:1, paddingY:0.5, display:"flex", gap:1 }}
           alignItems={"center"}
           onClick={() => !node.isFolder ? onFileSelect(node) : handleToggle(index)} 
           >{(node.isFolder && <span>{expand[index]?<FaAngleDown/>:<FaAngleRight/>}</span>)} 
