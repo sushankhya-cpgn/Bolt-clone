@@ -55,10 +55,12 @@ function AppBuilder({ height = "100vh" }) {
   const [prompt, setPrompt] = useState("");
   const [chatInput, setChatInput] = useState("");
   const [template, setTemplate] = useState([]);
+  const [llmMessage,setllmMessage] = useState([]);
   const [selectedFile, setSelectedFile] = useState<Node | null>(null);
   const [command, setCommand] = useState("");
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
   const terminalRef = useRef<HTMLDivElement | null>(null);
+  const [hasInitialized,setHasInitialized] = useState(false);
 
   // const [output, setOutput] = useState<string>("");
   const [data, setData] = useState([{}]);
@@ -82,10 +84,11 @@ function AppBuilder({ height = "100vh" }) {
   }
 
 async function init(currentPrompt = prompt) {
-    if (isBooting || !webcontainerInstance) {
+    if (isBooting || !webcontainerInstance || hasInitialized) {
       console.log("Waiting for webcontainer to initialize");
       return;
     }
+    setHasInitialized(true);
     try {
       // Test WebContainer command
       await runCommand("echo", ["Hello", "World"]);
@@ -464,10 +467,10 @@ async function init(currentPrompt = prompt) {
   }, [output]);
 
   useEffect(() => {
-    if (webcontainerInstance && !isBooting && prompt) {
+    if (webcontainerInstance && !isBooting && prompt && !hasInitialized) {
       init(prompt);
     }
-  }, [webcontainerInstance, isBooting, prompt]);
+  }, [webcontainerInstance, isBooting, prompt, hasInitialized]);
 
   const card = (
     <React.Fragment>
@@ -496,7 +499,7 @@ async function init(currentPrompt = prompt) {
                 </Typography>
               </Grid>
               <Grid size={4}>
-                <Button variant="contained" color="warning" size="small">
+                <Button variant="contained" color="warning" size="small" onClick={handleRetry}>
                   Retry
                 </Button>
               </Grid>
@@ -506,9 +509,17 @@ async function init(currentPrompt = prompt) {
       </CardContent>
     </React.Fragment>
   );
+
+  function handleRetry(){
+
+    console.log("Retry...")
+    
+  }
   function handleChatSubmit() {
     if (!chatInput.trim()) return;
+    setErrorMsg("");
     setChatSubmitted(true);
+    setHasInitialized(false);
     setPrompt(chatInput)
     setChatInput("");
   }
