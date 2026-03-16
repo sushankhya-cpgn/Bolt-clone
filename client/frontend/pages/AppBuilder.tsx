@@ -55,13 +55,13 @@ function AppBuilder({ height = "100vh" }) {
   const [prompt, setPrompt] = useState("");
   const [chatInput, setChatInput] = useState("");
   const [template, setTemplate] = useState([]);
-  const [llmMessage,setllmMessage] = useState([]);
+  const [llmMessage, setllmMessage] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<Node | null>(null);
   const [command, setCommand] = useState("");
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
   const terminalRef = useRef<HTMLDivElement | null>(null);
-  const [hasInitialized,setHasInitialized] = useState(false);
-
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [previousPackageInstalled, setPreviousPackageInstalled] = useState("");
   // const [output, setOutput] = useState<string>("");
   const [data, setData] = useState([{}]);
   const [errroMsg, setErrorMsg] = useState("");
@@ -83,7 +83,7 @@ function AppBuilder({ height = "100vh" }) {
     console.log(cmd, args);
   }
 
-async function init(currentPrompt = prompt) {
+  async function init(currentPrompt = prompt) {
     if (isBooting || !webcontainerInstance || hasInitialized) {
       console.log("Waiting for webcontainer to initialize");
       return;
@@ -94,7 +94,9 @@ async function init(currentPrompt = prompt) {
       await runCommand("echo", ["Hello", "World"]);
 
       // 1. First request → /template
-      const response = await axios.post(`${API_URL}/template`, { prompt:currentPrompt });
+      const response = await axios.post(`${API_URL}/template`, {
+        prompt: currentPrompt,
+      });
       const newTemplate = response.data?.prompts || [];
       setTemplate(newTemplate);
       console.log("Template:", newTemplate);
@@ -119,6 +121,7 @@ async function init(currentPrompt = prompt) {
         "Conversion to suitable format for webcontainers to preview in an iframe: ",
         fileSystemTree,
       );
+
       // const minimalFileSystemTree = {
       //   'package.json': {
       //     file: {
@@ -431,8 +434,13 @@ async function init(currentPrompt = prompt) {
         // 4. Install dependencies and start the server
         const installProcess = await runCommand("npm", ["install"]);
         await installProcess?.exit;
+        console.log(fileSystemTree);
         console.log("Dependencies installed");
         await runCommand("npm", ["run", "dev"]);
+        setPreviousPackageInstalled(
+          fileSystemTree["package.json"]?.file?.contents || "",
+        );
+        setllmMessage([response2.data.message]); // For history
         console.log("Server started");
       } else {
         console.error("WebContainer instance is not available");
@@ -454,11 +462,44 @@ async function init(currentPrompt = prompt) {
     }
   }
 
- useEffect(() => {
-  if (initialprompt) {
-    setPrompt(initialprompt);
+  async function handleFollowUp(history: string[]) {
+    // 2. Second request → /chat
+    const response2 = await axios.post(`${API_URL}/chat`, {
+      prompts: history,
+    });
+    console.log("Response from /chat:", response2.data);
+
+    const generatedSteps = parseStepFromXML(response2.data.message || "");
+    setSteps(
+      generatedSteps.map((step: Step) => ({ ...step, status: "completed" })),
+    );
+
+    // 3. Convert editor_data to FileSystemTree and mount to WebContainer
+    const editorData = convertToTree(generatedSteps || []);
+    setData(editorData);
+
+    const fileSystemTree = convertToFileSystemTree(editorData);
+    console.log(
+      "Conversion to suitable format for webcontainers to preview in an iframe: ",
+      fileSystemTree,
+    );
+    if (webcontainerInstance) {
+      await webcontainerInstance.mount(fileSystemTree);
+      const newPackage = fileSystemTree["package.json"]?.file?.contents;
+      if (newPackage !== previousPackageInstalled) {
+        const installProcess = await runCommand("npm", ["install"]);
+        setPreviousPackageInstalled(newPackage || "");
+        await installProcess?.exit;
+      }
+      // await runCommand("npm", ["run", "dev"]);
+    }
   }
-}, [initialprompt]);
+
+  useEffect(() => {
+    if (initialprompt) {
+      setPrompt(initialprompt);
+    }
+  }, [initialprompt]);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -499,7 +540,12 @@ async function init(currentPrompt = prompt) {
                 </Typography>
               </Grid>
               <Grid size={4}>
-                <Button variant="contained" color="warning" size="small" onClick={handleRetry}>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  size="small"
+                  onClick={handleRetry}
+                >
                   Retry
                 </Button>
               </Grid>
@@ -510,18 +556,23 @@ async function init(currentPrompt = prompt) {
     </React.Fragment>
   );
 
-  function handleRetry(){
-
-    console.log("Retry...")
-    
+  function handleRetry() {
+    console.log("Retry...");
   }
-  function handleChatSubmit() {
+
+  async function handleChatSubmit() {
     if (!chatInput.trim()) return;
-    setErrorMsg("");
-    setChatSubmitted(true);
-    setHasInitialized(false);
-    setPrompt(chatInput)
+
+    const newPrompt = chatInput;
+
     setChatInput("");
+
+    const updatedHistory = [...llmMessage, newPrompt];
+
+    console.log(updatedHistory);
+    setllmMessage(updatedHistory);
+
+    await handleFollowUp(updatedHistory);
   }
 
   return (
