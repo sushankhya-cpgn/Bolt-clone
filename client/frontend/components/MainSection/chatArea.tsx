@@ -60,6 +60,7 @@ function ChatArea() {
               borderRadius: 2,
               backgroundColor: "rgb(38, 38, 38)",
               color: "white",
+              paddingRight: "100px",
             },
             "& .MuiInputLabel-root": { color: "grey" },
           }}
@@ -80,7 +81,6 @@ function ChatArea() {
               height:30
              
             }}
-            onClick={handleSubmit}
           >
             <IoMdArrowForward/>
           </Button>

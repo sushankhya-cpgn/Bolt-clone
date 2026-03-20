@@ -66,6 +66,7 @@ function AppBuilder({ height = "100vh" }) {
   const [previousPackageInstalled, setPreviousPackageInstalled] = useState("");
   const [data, setData] = useState([{}]);
   const [errroMsg, setErrorMsg] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   console.log("Prompt:", prompt);
 
   const [steps, setSteps] = useState([{}]);
@@ -82,6 +83,8 @@ function AppBuilder({ height = "100vh" }) {
 
     runCommand(cmd, args);
     console.log(cmd, args);
+    setCommand("");
+    inputRef.current?.focus();
   }
 
   async function init(currentPrompt = prompt) {
@@ -108,15 +111,19 @@ function AppBuilder({ height = "100vh" }) {
             role: "user" as const,
             content: t,
           })),
-          { role: "user", content: currentPrompt + "Create index.html and all other necessary config files including package.json, vite.config.ts, tailwind.config.js, postcss.config.js, and tsconfig files.",
- },
+          {
+            role: "user",
+            content:
+              currentPrompt +
+              "Create index.html and all other necessary config files including package.json, vite.config.ts, tailwind.config.js, postcss.config.js, and tsconfig files.",
+          },
         ];
 
-      // 2. Second request → /chat 
+      // 2. Second request → /chat
       const response2 = await axios.post(`${API_URL}/chat`, {
- prompts:initialMessages
-});
-console.log("Initial message is",initialMessages);
+        prompts: initialMessages,
+      });
+      console.log("Initial message is", initialMessages);
       console.log("Response from /chat:", response2.data);
 
       const generatedSteps = parseStepFromXML(response2.data.message || "");
@@ -454,9 +461,9 @@ console.log("Initial message is",initialMessages);
         );
         // setllmMessage([response2.data.message]); // For history
         setHistory([
-  { role: "user", content: currentPrompt },
-  { role: "assistant", content: response2.data.message },
-]);
+          { role: "user", content: currentPrompt },
+          { role: "assistant", content: response2.data.message },
+        ]);
         console.log("Server started");
       } else {
         console.error("WebContainer instance is not available");
@@ -561,12 +568,12 @@ console.log("Initial message is",initialMessages);
     }
   }, [initialprompt]);
 
+
+
   useEffect(() => {
     if (!terminalRef.current) return;
-    const logsContainer = terminalRef.current.children[0];
-    logsContainer.scrollTop = logsContainer.scrollHeight;
+    terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
   }, [output]);
-
 
   useEffect(() => {
     if (webcontainerInstance && !isBooting && prompt && !hasInitialized) {
@@ -644,7 +651,8 @@ console.log("Initial message is",initialMessages);
       <Navbar />
 
       {/* Main section */}
-      <Box display="flex" height={height} gap={4} mt={2}>
+      <Box display="flex" flex={1} gap={4} mt={2} minHeight={0}>
+        {" "}
         {/* Left section */}
         <Box display="flex" flexDirection="column" sx={{ width: "40%" }}>
           <Box display="flex" justifyContent="end">
@@ -700,6 +708,7 @@ console.log("Initial message is",initialMessages);
                   backgroundColor: "rgb(38, 38, 38)",
                   color: "white",
                   border: "1px solid grey",
+                  paddingRight: "100px",
                 }}
               />
 
@@ -713,18 +722,17 @@ console.log("Initial message is",initialMessages);
             </Box>
           </Box>
         </Box>
-
         {/* Middle section */}
         <Box
-  display="flex"
-  flexDirection="column"
-  bgcolor="rgb(23, 23, 23)"
-  width="100%"
-  minHeight={0}
-  flex={1}
-  borderRadius="10px"
-  overflow="hidden"
->
+          display="flex"
+          flexDirection="column"
+          bgcolor="rgb(23, 23, 23)"
+          width="100%"
+          minHeight={0}
+          flex={1}
+          borderRadius="10px"
+          overflow="hidden"
+        >
           <Box display="flex" justifyContent="flex-start" padding={2}>
             <ButtonGroup>
               <Button
@@ -794,7 +802,7 @@ console.log("Initial message is",initialMessages);
             </Box>
           )}
 
-          {/* <Box sx={{ height: "30%", padding: 1 }}>
+          <Box sx={{ height: "30%", padding: 1, minHeight: 0 }}>
             <Box
               color="white"
               bgcolor="black"
@@ -802,20 +810,22 @@ console.log("Initial message is",initialMessages);
               padding={2}
               sx={{
                 height: "100%",
-                overflowY: "scroll", // vertical scrolling
-                overflowX: "hidden", // prevent sideways scrolling
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
                 fontFamily: "monospace",
                 fontSize: "0.85rem",
+                boxSizing: "border-box",
               }}
-              display="flex"
-              flexDirection="column"
-              ref={terminalRef}
             >
+              {/* Scrollable output area */}
               <Box
+                ref={terminalRef}
                 sx={{
-                  display: "flex",
-                  overflowY: "scroll",
-                  flexDirection: "column",
+                  flex: 1,
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  minHeight: 0, 
                 }}
               >
                 {output.map((cmd, index) => (
@@ -828,76 +838,30 @@ console.log("Initial message is",initialMessages);
                 ))}
               </Box>
 
+              {/* Pinned command input at bottom */}
               <TextareaAutosize
                 placeholder="Type your command"
-                className="bg-transparent outline-none text-green-900"
+                value={command}
                 onChange={(e) => setCommand(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleRun()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault(); 
+                    handleRun();
+                  }
+                }}
                 style={{
                   width: "100%",
+                  flexShrink: 0,
                   color: "lightgreen",
                   background: "transparent",
                   border: "none",
                   outline: "none",
+                  resize: "none",
                 }}
+                ref={inputRef}
               />
             </Box>
-          </Box> */}
-
-          <Box sx={{ height: "30%", padding: 1, minHeight: 0 }}>
-  <Box
-    color="white"
-    bgcolor="black"
-    border={1}
-    padding={2}
-    sx={{
-      height: "100%",
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden",
-      fontFamily: "monospace",
-      fontSize: "0.85rem",
-      boxSizing: "border-box",
-    }}
-  >
-    {/* Scrollable output area */}
-    <Box
-      ref={terminalRef}
-      sx={{
-        flex: 1,
-        overflowY: "auto",
-        overflowX: "hidden",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {output.map((cmd, index) => (
-        <Typography
-          key={index}
-          sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-        >
-          {cmd}
-        </Typography>
-      ))}
-    </Box>
-
-    {/* Pinned command input at bottom */}
-    <TextareaAutosize
-      placeholder="Type your command"
-      onChange={(e) => setCommand(e.target.value)}
-      onKeyDown={(e) => e.key === "Enter" && handleRun()}
-      style={{
-        width: "100%",
-        flexShrink: 0,
-        color: "lightgreen",
-        background: "transparent",
-        border: "none",
-        outline: "none",
-        resize: "none",
-      }}
-    />
-  </Box>
-</Box>
+          </Box>
         </Box>
       </Box>
     </Box>
