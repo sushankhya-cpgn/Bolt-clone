@@ -55,16 +55,18 @@ function AppBuilder({ height = "100vh" }) {
   const [prompt, setPrompt] = useState("");
   const [chatInput, setChatInput] = useState("");
   const [template, setTemplate] = useState([]);
-  const [llmMessage, setllmMessage] = useState<string[]>([]);
+  const [history, setHistory] = useState<
+    { role: "user" | "assistant"; content: string }[]
+  >([]);
   const [selectedFile, setSelectedFile] = useState<Node | null>(null);
   const [command, setCommand] = useState("");
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
   const terminalRef = useRef<HTMLDivElement | null>(null);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [previousPackageInstalled, setPreviousPackageInstalled] = useState("");
-  // const [output, setOutput] = useState<string>("");
   const [data, setData] = useState([{}]);
   const [errroMsg, setErrorMsg] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   console.log("Prompt:", prompt);
 
   const [steps, setSteps] = useState([{}]);
@@ -81,6 +83,8 @@ function AppBuilder({ height = "100vh" }) {
 
     runCommand(cmd, args);
     console.log(cmd, args);
+    setCommand("");
+    inputRef.current?.focus();
   }
 
   async function init(currentPrompt = prompt) {
@@ -101,10 +105,25 @@ function AppBuilder({ height = "100vh" }) {
       setTemplate(newTemplate);
       console.log("Template:", newTemplate);
 
+      const initialMessages: { role: "user" | "assistant"; content: string }[] =
+        [
+          ...newTemplate.map((t: string) => ({
+            role: "user" as const,
+            content: t,
+          })),
+          {
+            role: "user",
+            content:
+              currentPrompt +
+              "Create index.html and all other necessary config files including package.json, vite.config.ts, tailwind.config.js, postcss.config.js, and tsconfig files.",
+          },
+        ];
+
       // 2. Second request → /chat
       const response2 = await axios.post(`${API_URL}/chat`, {
-        prompts: [...newTemplate, currentPrompt],
+        prompts: initialMessages,
       });
+      console.log("Initial message is", initialMessages);
       console.log("Response from /chat:", response2.data);
 
       const generatedSteps = parseStepFromXML(response2.data.message || "");
@@ -440,7 +459,11 @@ function AppBuilder({ height = "100vh" }) {
         setPreviousPackageInstalled(
           fileSystemTree["package.json"]?.file?.contents || "",
         );
-        setllmMessage([response2.data.message]); // For history
+        // setllmMessage([response2.data.message]); // For history
+        setHistory([
+          { role: "user", content: currentPrompt },
+          { role: "assistant", content: response2.data.message },
+        ]);
         console.log("Server started");
       } else {
         console.error("WebContainer instance is not available");
@@ -462,36 +485,80 @@ function AppBuilder({ height = "100vh" }) {
     }
   }
 
-  async function handleFollowUp(history: string[]) {
-    // 2. Second request → /chat
-    const response2 = await axios.post(`${API_URL}/chat`, {
-      prompts: history,
-    });
-    console.log("Response from /chat:", response2.data);
+  // async function handleFollowUp(history: string[]) {
+  //   // 2. Second request → /chat
+  //   const response2 = await axios.post(`${API_URL}/chat`, {
+  //     prompts: history,
+  //   });
+  //   console.log("Response from /chat:", response2.data);
 
-    const generatedSteps = parseStepFromXML(response2.data.message || "");
-    setSteps(
-      generatedSteps.map((step: Step) => ({ ...step, status: "completed" })),
-    );
+  //   const generatedSteps = parseStepFromXML(response2.data.message || "");
+  //   setSteps(
+  //     generatedSteps.map((step: Step) => ({ ...step, status: "completed" })),
+  //   );
 
-    // 3. Convert editor_data to FileSystemTree and mount to WebContainer
-    const editorData = convertToTree(generatedSteps || []);
-    setData(editorData);
+  //   // 3. Convert editor_data to FileSystemTree and mount to WebContainer
+  //   const editorData = convertToTree(generatedSteps || []);
+  //   setData(editorData);
 
-    const fileSystemTree = convertToFileSystemTree(editorData);
-    console.log(
-      "Conversion to suitable format for webcontainers to preview in an iframe: ",
-      fileSystemTree,
-    );
-    if (webcontainerInstance) {
-      await webcontainerInstance.mount(fileSystemTree);
-      const newPackage = fileSystemTree["package.json"]?.file?.contents;
-      if (newPackage !== previousPackageInstalled) {
-        const installProcess = await runCommand("npm", ["install"]);
-        setPreviousPackageInstalled(newPackage || "");
-        await installProcess?.exit;
+  //   const fileSystemTree = convertToFileSystemTree(editorData);
+  //   console.log(
+  //     "Conversion to suitable format for webcontainers to preview in an iframe: ",
+  //     fileSystemTree,
+  //   );
+  //   if (webcontainerInstance) {
+  //     await webcontainerInstance.mount(fileSystemTree);
+  //     const newPackage = fileSystemTree["package.json"]?.file?.contents;
+  //     if (newPackage !== previousPackageInstalled) {
+  //       const installProcess = await runCommand("npm", ["install"]);
+  //       setPreviousPackageInstalled(newPackage || "");
+  //       await installProcess?.exit;
+  //     }
+  //     // await runCommand("npm", ["run", "dev"]);
+  //   }
+  // }
+
+  async function handleFollowUp(
+    history: { role: "user" | "assistant"; content: string }[],
+  ) {
+    try {
+      const response2 = await axios.post(`${API_URL}/chat`, {
+        prompts: history,
+      });
+
+      const generatedSteps = parseStepFromXML(response2.data.message || "");
+      setSteps(
+        generatedSteps.map((step: Step) => ({ ...step, status: "completed" })),
+      );
+
+      const editorData = convertToTree(generatedSteps || []);
+      setData(editorData);
+
+      const fileSystemTree = convertToFileSystemTree(editorData);
+
+      if (webcontainerInstance) {
+        await webcontainerInstance.mount(fileSystemTree);
+        const newPackage = fileSystemTree["package.json"]?.file?.contents;
+        if (newPackage !== previousPackageInstalled) {
+          const installProcess = await runCommand("npm", ["install"]);
+          setPreviousPackageInstalled(newPackage || "");
+          await installProcess?.exit;
+        }
       }
-      // await runCommand("npm", ["run", "dev"]);
+
+      // ✅ Append the assistant reply to history so next follow-up has full context
+      setHistory((prev) => [
+        ...prev,
+        { role: "assistant" as const, content: response2.data.message },
+      ]);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setErrorMsg(
+          error.response?.data?.message || "Follow-up request failed.",
+        );
+      } else {
+        setErrorMsg("An unexpected error occurred.");
+      }
     }
   }
 
@@ -501,10 +568,11 @@ function AppBuilder({ height = "100vh" }) {
     }
   }, [initialprompt]);
 
+
+
   useEffect(() => {
     if (!terminalRef.current) return;
-    const logsContainer = terminalRef.current.children[0];
-    logsContainer.scrollTop = logsContainer.scrollHeight;
+    terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
   }, [output]);
 
   useEffect(() => {
@@ -567,10 +635,13 @@ function AppBuilder({ height = "100vh" }) {
 
     setChatInput("");
 
-    const updatedHistory = [...llmMessage, newPrompt];
+    const updatedHistory = [
+      ...history,
+      { role: "user" as const, content: newPrompt },
+    ];
 
     console.log(updatedHistory);
-    setllmMessage(updatedHistory);
+    setHistory(updatedHistory);
 
     await handleFollowUp(updatedHistory);
   }
@@ -580,7 +651,8 @@ function AppBuilder({ height = "100vh" }) {
       <Navbar />
 
       {/* Main section */}
-      <Box display="flex" height={height} gap={4} mt={2}>
+      <Box display="flex" flex={1} gap={4} mt={2} minHeight={0}>
+        {" "}
         {/* Left section */}
         <Box display="flex" flexDirection="column" sx={{ width: "40%" }}>
           <Box display="flex" justifyContent="end">
@@ -636,6 +708,7 @@ function AppBuilder({ height = "100vh" }) {
                   backgroundColor: "rgb(38, 38, 38)",
                   color: "white",
                   border: "1px solid grey",
+                  paddingRight: "100px",
                 }}
               />
 
@@ -649,15 +722,16 @@ function AppBuilder({ height = "100vh" }) {
             </Box>
           </Box>
         </Box>
-
         {/* Middle section */}
         <Box
           display="flex"
           flexDirection="column"
           bgcolor="rgb(23, 23, 23)"
           width="100%"
-          height="100%"
+          minHeight={0}
+          flex={1}
           borderRadius="10px"
+          overflow="hidden"
         >
           <Box display="flex" justifyContent="flex-start" padding={2}>
             <ButtonGroup>
@@ -728,7 +802,7 @@ function AppBuilder({ height = "100vh" }) {
             </Box>
           )}
 
-          <Box sx={{ height: "30%", padding: 1 }}>
+          <Box sx={{ height: "30%", padding: 1, minHeight: 0 }}>
             <Box
               color="white"
               bgcolor="black"
@@ -736,20 +810,22 @@ function AppBuilder({ height = "100vh" }) {
               padding={2}
               sx={{
                 height: "100%",
-                overflowY: "scroll", // vertical scrolling
-                overflowX: "hidden", // prevent sideways scrolling
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
                 fontFamily: "monospace",
                 fontSize: "0.85rem",
+                boxSizing: "border-box",
               }}
-              display="flex"
-              flexDirection="column"
-              ref={terminalRef}
             >
+              {/* Scrollable output area */}
               <Box
+                ref={terminalRef}
                 sx={{
-                  display: "flex",
-                  overflowY: "scroll",
-                  flexDirection: "column",
+                  flex: 1,
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  minHeight: 0, 
                 }}
               >
                 {output.map((cmd, index) => (
@@ -762,19 +838,27 @@ function AppBuilder({ height = "100vh" }) {
                 ))}
               </Box>
 
-              <input
-                type="text"
+              {/* Pinned command input at bottom */}
+              <TextareaAutosize
                 placeholder="Type your command"
-                className="bg-transparent outline-none text-green-900"
+                value={command}
                 onChange={(e) => setCommand(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleRun()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault(); 
+                    handleRun();
+                  }
+                }}
                 style={{
                   width: "100%",
+                  flexShrink: 0,
                   color: "lightgreen",
                   background: "transparent",
                   border: "none",
                   outline: "none",
+                  resize: "none",
                 }}
+                ref={inputRef}
               />
             </Box>
           </Box>
